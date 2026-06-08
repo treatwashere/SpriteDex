@@ -266,7 +266,7 @@
         .sprite-card.rarity-Rare .card-inner-display { background: var(--bg-Rare); }
         .sprite-card.rarity-Epic .card-inner-display { background: var(--bg-Epic); }
         .sprite-card.rarity-Legendary .card-inner-display { background: var(--bg-Legendary); }
-        .sprite-card.rarity-Mythical .card-inner-display { background: var(--bg-Mythic); }
+        .sprite-card.rarity-Mythic .card-inner-display { background: var(--bg-Mythic); }
         .sprite-card.rarity-Special .card-inner-display { background: var(--bg-Special); }
 
         /* Moving Radial Aura Glow Effect */
@@ -353,7 +353,7 @@
         .sprite-card.rarity-Rare .fortnite-rarity-tag { background: var(--color-Rare); }
         .sprite-card.rarity-Epic .fortnite-rarity-tag { background: var(--color-Epic); }
         .sprite-card.rarity-Legendary .fortnite-rarity-tag { background: var(--color-Legendary); }
-        .sprite-card.rarity-Mythical .fortnite-rarity-tag { background: var(--color-Mythic); }
+        .sprite-card.rarity-Mythic .fortnite-rarity-tag { background: var(--color-Mythic); }
         .sprite-card.rarity-Special .fortnite-rarity-tag { background: var(--color-Special); color: #ffffff; }
 
         /* Footer Style Overhaul matching allsprites.jpg texture bar layer */
@@ -383,7 +383,7 @@
         .sprite-card.rarity-Rare::after { background-color: var(--color-Rare); }
         .sprite-card.rarity-Epic::after { background-color: var(--color-Epic); }
         .sprite-card.rarity-Legendary::after { background-color: var(--color-Legendary); }
-        .sprite-card.rarity-Mythical::after { background-color: var(--color-Mythic); }
+        .sprite-card.rarity-Mythic::after { background-color: var(--color-Mythic); }
         .sprite-card.rarity-Special::after { background-color: var(--color-Special); }
 
         .view-mode-banner {
@@ -600,8 +600,8 @@
                 
                 const unreleasedBadge = sprite.unreleased ? `<div class="status-badge unreleased">UNRELEASED</div>` : '';
                 
-                // Displays 'Mythical' data keys cleanly as 'MYTHIC' inside the angular locker label container
-                const displayRarityText = itemRarity === 'Mythical' ? 'MYTHIC' : itemRarity;
+                // Displays 'Mythic' data keys cleanly as 'MYTHIC' inside the angular locker label container
+                const displayRarityText = itemRarity === 'Mythic' ? 'MYTHIC' : itemRarity;
                 const rarityBadge = `<div class="fortnite-rarity-tag">${displayRarityText}</div>`;
                 
                 const inferredImagePath = `sprites/${sprite.id}.png`;
