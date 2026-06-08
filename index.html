@@ -555,17 +555,15 @@
             margin-left: 10px;
         }
 
-        /* Compressed Alternatives Variant Box Triggers */
+        /* Compressed Alternatives Variant Layout Modifications */
         .alt-variants-tray {
             position: absolute;
             top: 6px;
             right: 6px;
             display: flex;
-            flex-direction: row-reverse;
+            flex-direction: column; /* Line them up on the right side going down */
             gap: 4px;
             z-index: 8;
-            max-width: 70%;
-            flex-wrap: wrap;
         }
 
         .alt-variant-pin {
@@ -577,13 +575,6 @@
             background-size: cover;
             background-position: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            transition: transform 0.1s;
-        }
-
-        .alt-variant-pin:hover {
-            transform: scale(1.2);
-            border-color: #fff;
-            z-index: 12;
         }
 
         .alt-variant-pin.obtained-pin {
@@ -591,23 +582,24 @@
             box-shadow: 0 0 6px var(--fn-lime);
         }
 
-        /* Popout Full Preview Card Assembly */
+        /* Popout Layout Customizations for In-Place Scaling Expansion */
         .alt-preview-popout {
             position: absolute;
-            top: -3px;
-            left: -3px;
-            width: calc(100% + 6px);
-            height: calc(100% + 6px);
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%) scale(0.1);
+            transform-origin: right center; /* Expands smoothly from right side anchor position */
+            width: 154px; /* Fixed normal size specifications matching base viewport limits */
+            height: 181px;
             z-index: 15;
             pointer-events: none;
             opacity: 0;
-            transform: scale(0.95);
             transition: opacity 0.15s ease, transform 0.15s ease;
         }
 
         .alt-variant-pin:hover .alt-preview-popout {
             opacity: 1;
-            transform: scale(1);
+            transform: translateY(-50%) scale(1); /* Expands to full standard card footprint */
             pointer-events: auto;
         }
     </style>
@@ -662,6 +654,11 @@
                 </div>
 
                 <div class="switch-row">
+                    <span class="switch-label">COMPRESSED GRID MODE</span>
+                    <input type="checkbox" id="compressed-grid-switch" class="switch-input">
+                </div>
+
+                <div class="switch-row">
                     <span class="switch-label">SHOW UNRELEASED</span>
                     <input type="checkbox" id="unreleased-switch" class="switch-input">
                 </div>
@@ -669,11 +666,6 @@
                 <div class="switch-row">
                     <span class="switch-label">LOW FIDELITY MODE</span>
                     <input type="checkbox" id="low-fidelity-switch" class="switch-input">
-                </div>
-
-                <div class="switch-row">
-                    <span class="switch-label">COMPRESSED GRID MODE</span>
-                    <input type="checkbox" id="compressed-grid-switch" class="switch-input">
                 </div>
             </aside>
 
@@ -801,13 +793,11 @@
         const totalReleased = baseSprites.filter(sprite => !sprite.unreleased).length;
         const collectedReleased = baseSprites.filter(sprite => !sprite.unreleased && obtainedSprites.includes(sprite.id)).length;
         
-        // Updates real-time overlay box parameters
         liveRatio.textContent = `${collectedReleased} / ${totalReleased}`;
         const percentage = totalReleased > 0 ? (collectedReleased / totalReleased) * 100 : 0;
         liveBarFill.style.width = `${percentage}%`;
     }
 
-    // Helper to calculate exact inline style dynamic font scales
     function adjustCardFontSizes() {
         document.querySelectorAll('.card-title-footer span').forEach(span => {
             const parent = span.parentElement;
@@ -855,21 +845,27 @@
         const showUnreleased = unreleasedSwitch.checked;
         const isCompressedMode = compressedGridSwitch.checked;
 
-        // Grouping logic optimization block for Compressed Mode conversions
         let itemsToRender = [];
         if (isCompressedMode) {
-            // Only process Basic themes as base items
             const basicSprites = baseSprites.filter(s => s.theme === 'Basic');
             
             basicSprites.forEach(baseSprite => {
-                // Find all matching alternative variants
                 const baseNameRoot = baseSprite.name.replace(/\s*\(Basic\)\s*/i, '').trim();
-                const alternatives = baseSprites.filter(s => s.id !== baseSprite.id && s.name.toLowerCase().includes(baseNameRoot.toLowerCase()));
                 
-                // Determine matches based on filters applied onto the base item or variants
+                // Get all variant templates
+                let alternatives = baseSprites.filter(s => s.id !== baseSprite.id && s.name.toLowerCase().includes(baseNameRoot.toLowerCase()));
+                
+                // Filter unreleased items within alternative trays based on showUnreleased state
+                if (!showUnreleased) {
+                    alternatives = alternatives.filter(v => !v.unreleased);
+                }
+                
                 const matchesSearch = baseSprite.name.toLowerCase().includes(searchQuery);
                 const matchesTheme = selectedTheme === 'all' || selectedTheme === 'Basic';
                 
+                // Hide basic card entirely if it is unreleased and showUnreleased is off
+                if (!showUnreleased && baseSprite.unreleased) return;
+
                 if (matchesSearch && matchesTheme) {
                     itemsToRender.push({
                         sprite: baseSprite,
@@ -879,7 +875,6 @@
                 }
             });
         } else {
-            // Standard dynamic flat view mode arrays setup
             baseSprites.forEach(sprite => {
                 const matchesSearch = sprite.name.toLowerCase().includes(searchQuery);
                 const matchesTheme = selectedTheme === 'all' || sprite.theme === selectedTheme;
@@ -916,7 +911,6 @@
             card.className = `sprite-card rarity-${itemRarity} ${isObtained ? 'obtained' : ''}`;
             card.innerHTML = buildCardHTML(sprite, isObtained);
 
-            // Append small inline absolute trays for variant mapping hooks
             if (item.isBase && item.variants.length > 0) {
                 const tray = document.createElement('div');
                 tray.className = 'alt-variants-tray';
@@ -927,7 +921,6 @@
                     pin.className = `alt-variant-pin ${varObtained ? 'obtained-pin' : ''}`;
                     pin.style.backgroundImage = `url('sprites/${variant.id}.png'), url('https://placehold.co/50?text=None')`;
                     
-                    // Generate dynamic localized popout background layouts
                     const popout = document.createElement('div');
                     popout.className = `alt-preview-popout sprite-card rarity-${variant.rarity || 'Rare'} ${varObtained ? 'obtained' : ''}`;
                     popout.innerHTML = buildCardHTML(variant, varObtained);
@@ -939,7 +932,6 @@
                             e.stopPropagation();
                             e.preventDefault();
                             toggleObtained(variant.id, popout);
-                            // Refresh pin tracking style properties
                             if (obtainedSprites.includes(variant.id)) {
                                 pin.classList.add('obtained-pin');
                             } else {
@@ -962,7 +954,6 @@
             spriteGrid.appendChild(card);
         });
 
-        // Run automated fluid calculations for title boxes
         adjustCardFontSizes();
     }
 
@@ -1053,11 +1044,9 @@
                 
                 const rarity = sprite.rarity || 'Rare';
                 
-                // 1. Render Card Frame Base
                 ctx.fillStyle = '#0f141d';
                 ctx.fillRect(x, y, cardW, cardH);
 
-                // 2. Render Rarity Background Gradient Layer
                 const innerH = cardH - 30;
                 let bgGrad = ctx.createLinearGradient(x, y, x, y + innerH);
                 let accentColor = '#004A8E';
@@ -1082,7 +1071,6 @@
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(x, y, cardW, innerH);
 
-                // 3. Render Special Rainbow Aura Overlay
                 if (rarity === 'Special') {
                     let rainGrad = ctx.createLinearGradient(x, y, x + cardW, y + innerH);
                     rainGrad.addColorStop(0, 'rgba(81, 247, 204, 0.35)');
@@ -1094,7 +1082,6 @@
                     ctx.fillRect(x, y, cardW, innerH);
                 }
 
-                // 4. Draw Sprite Image
                 const maxImgDim = cardW * 0.82;
                 let iw = img.width;
                 let ih = img.height;
@@ -1105,7 +1092,6 @@
                 let iy = y + (innerH - nh) / 2;
                 ctx.drawImage(img, ix, iy, nw, nh);
 
-                // 5. Draw Slanted Rarity Text Badge Layout
                 ctx.save();
                 if (rarity === 'Special') {
                     let badgeGrad = ctx.createLinearGradient(x, y + innerH - 18, x + 75, y + innerH - 18);
@@ -1130,7 +1116,6 @@
                 ctx.textAlign = 'left';
                 ctx.fillText(rarity === 'Mythic' ? 'MYTHIC' : rarity, x + 6, y + innerH - 5);
 
-                // 6. Draw Centered Title Text Footer Strip Box (with safety fallback scales)
                 ctx.fillStyle = 'rgba(15, 20, 29, 0.9)';
                 ctx.fillRect(x, y + innerH, cardW, 30);
 
@@ -1139,14 +1124,12 @@
                 ctx.font = `700 ${calculatedFontSize}px Oswald`;
                 ctx.textAlign = 'center';
                 
-                // Canvas adaptive string context check 
                 while(ctx.measureText(sprite.name).width > (cardW - 8) && calculatedFontSize > 8) {
                     calculatedFontSize -= 0.5;
                     ctx.font = `700 ${calculatedFontSize}px Oswald`;
                 }
                 ctx.fillText(sprite.name, x + (cardW / 2), y + innerH + 19);
 
-                // 7. Base Card Underlay Accent Line Border strip
                 ctx.fillStyle = accentColor;
                 if (rarity === 'Special') {
                     let baseGrad = ctx.createLinearGradient(x, y + cardH - 4, x + cardW, y + cardH - 4);
@@ -1157,7 +1140,6 @@
                 }
                 ctx.fillRect(x, y + cardH - 4, cardW, 4);
 
-                // Outer standard structural frame contour border wrap
                 ctx.strokeStyle = '#1a2233';
                 ctx.lineWidth = 3;
                 ctx.strokeRect(x, y, cardW, cardH);
