@@ -242,7 +242,7 @@
 
 <div class="container">
     <header class="fn-navbar">
-        <div class="brand-title">👑 FORTNITE SPRITES TRACKER <span>SPRITE CATALOGUE</span></div>
+        <div class="brand-title">👑 FORTNITE SPRITES TRACKER <span id="navbar-stats">0/0 COLLECTED</span></div>
         <div class="user-tag">USER COLLECTION</div>
     </header>
 
@@ -281,6 +281,21 @@
     const searchInput = document.getElementById('search');
     const themeFilter = document.getElementById('theme-filter');
     const statusFilter = document.getElementById('status-filter');
+    const navbarStats = document.getElementById('navbar-stats');
+
+    // New helper function to count tracked progress of active/released items
+    function updateCollectionCounter() {
+        if (typeof baseSprites === 'undefined') return;
+
+        // Count items in sprites-data.js that are NOT unreleased
+        const totalReleased = baseSprites.filter(sprite => !sprite.unreleased).length;
+
+        // Count how many of those released items are saved inside your obtained array
+        const collectedReleased = baseSprites.filter(sprite => !sprite.unreleased && obtainedSprites.includes(sprite.id)).length;
+
+        // Dynamically print the format to the top header view area
+        navbarStats.textContent = `${collectedReleased}/${totalReleased} COLLECTED`;
+    }
 
     function renderGrid() {
         spriteGrid.innerHTML = '';
@@ -289,6 +304,9 @@
             spriteGrid.innerHTML = '<div style="padding:20px; color:var(--fn-unreleased);">Error: sprites-data.js file missing or incorrect layout.</div>';
             return;
         }
+
+        // Keep the tracker data matching changes smoothly whenever cards load or are filtered
+        updateCollectionCounter();
 
         const searchQuery = searchInput.value.toLowerCase();
         const selectedTheme = themeFilter.value;
@@ -306,7 +324,6 @@
                 
                 const badgeHTML = sprite.unreleased ? `<div class="status-badge unreleased">UNRELEASED</div>` : '';
                 
-                // AUTOMATICALLY INFER FILE PATH: sets path based on id
                 const inferredImagePath = `sprites/${sprite.id}.png`;
 
                 card.innerHTML = `
