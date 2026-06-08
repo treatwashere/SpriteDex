@@ -82,23 +82,43 @@
             gap: 15px;
         }
 
-        .nav-progress-box {
+        /* Live Progress Counter Box */
+        .live-progress-box {
             background-color: var(--fn-panel-bg);
             border: 2px solid var(--fn-border);
             border-radius: 4px;
-            padding: 5px 10px;
+            padding: 6px 12px;
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-width: 180px;
         }
 
-        .nav-progress-box .filter-header {
-            margin: 0;
-            font-size: 11px;
+        .live-progress-text {
+            font-size: 13px;
+            font-weight: 700;
+            color: #8a929e;
+            display: flex;
+            justify-content: space-between;
         }
 
-        .nav-progress-box .toggle-container {
-            margin-bottom: 0;
+        .live-progress-text span {
+            color: #fff;
+        }
+
+        .live-progress-bar-bg {
+            background: #0e1117;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .live-progress-bar-fill {
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
         }
 
         .share-btn, .image-btn {
@@ -211,6 +231,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 5px 2px;
+            margin-top: 4px;
         }
 
         .switch-label {
@@ -450,7 +471,7 @@
         .sprite-card.rarity-Mythic .fortnite-rarity-tag { background: var(--color-Mythic); color: var(--text-Mythic); }
         .sprite-card.rarity-Special .fortnite-rarity-tag { background: var(--color-Special); color: var(--text-Special); }
 
-        /* Footer Style Overhaul */
+        /* Footer Style Overhaul with Centered Alignment */
         .card-title-footer {
             font-size: 13px;
             font-weight: 700;
@@ -504,18 +525,16 @@
 
 <div class="container">
     <header class="fn-navbar">
-        <div class="brand-title">FORTNITE SPRITES TRACKER <span id="navbar-stats">0/0 COLLECTED</span></div>
+        <div class="brand-title">FORTNITE SPRITES TRACKER</div>
         <div class="nav-controls-right">
-            <div class="nav-progress-box">
-                <div class="filter-header">COLLECTION PROGRESS</div>
-                <div class="toggle-container">
-                    <button class="toggle-btn active" id="toggle-all">ALL</button>
-                    <button class="toggle-btn" id="toggle-owned">OWNED</button>
-                    <button class="toggle-btn" id="toggle-unowned">UNOWNED</button>
+            <div class="live-progress-box">
+                <div class="live-progress-text">PROGRESS: <span id="live-counter-ratio">0 / 0</span></div>
+                <div class="live-progress-bar-bg">
+                    <div class="live-progress-bar-fill" id="live-counter-bar"></div>
                 </div>
             </div>
-            <button class="share-btn" id="shareBtn">SHARE COLLECTION</button>
             <button class="image-btn" id="imageBtn">GENERATE COLLECTION IMAGE</button>
+            <button class="share-btn" id="shareBtn">SHARE COLLECTION</button>
         </div>
     </header>
 
@@ -541,6 +560,13 @@
                     <option value="Holofoil">HOLOFOIL</option>
                     <option value="Rift">RIFT</option>
                 </select>
+
+                <div class="filter-header">COLLECTION PROGRESS</div>
+                <div class="toggle-container">
+                    <button class="toggle-btn active" id="toggle-all">ALL</button>
+                    <button class="toggle-btn" id="toggle-owned">OWNED</button>
+                    <button class="toggle-btn" id="toggle-unowned">UNOWNED</button>
+                </div>
 
                 <div class="switch-row">
                     <span class="switch-label">SHOW UNRELEASED</span>
@@ -632,9 +658,11 @@
     const themeFilter = document.getElementById('theme-filter');
     const unreleasedSwitch = document.getElementById('unreleased-switch');
     const lowFidelitySwitch = document.getElementById('low-fidelity-switch');
-    const navbarStats = document.getElementById('navbar-stats');
     const shareBtn = document.getElementById('shareBtn');
     const imageBtn = document.getElementById('imageBtn');
+    
+    const liveRatio = document.getElementById('live-counter-ratio');
+    const liveBarFill = document.getElementById('live-counter-bar');
 
     let currentStatusFilter = 'all'; 
 
@@ -666,7 +694,11 @@
         if (typeof baseSprites === 'undefined') return;
         const totalReleased = baseSprites.filter(sprite => !sprite.unreleased).length;
         const collectedReleased = baseSprites.filter(sprite => !sprite.unreleased && obtainedSprites.includes(sprite.id)).length;
-        navbarStats.textContent = `${collectedReleased}/${totalReleased} COLLECTED`;
+        
+        // Updates real-time overlay box parameters
+        liveRatio.textContent = `${collectedReleased} / ${totalReleased}`;
+        const percentage = totalReleased > 0 ? (collectedReleased / totalReleased) * 100 : 0;
+        liveBarFill.style.width = `${percentage}%`;
     }
 
     function renderGrid() {
@@ -760,7 +792,6 @@
         localStorage.setItem('fn_obtained_sprites', JSON.stringify(obtainedSprites));
         updateCollectionCounter();
 
-        // If a status filter is active, remove items dynamically instead of fully breaking active gradient frames
         if (currentStatusFilter === 'obtained' && !cardElement.classList.contains('obtained')) {
             cardElement.remove();
         } else if (currentStatusFilter === 'missing' && cardElement.classList.contains('obtained')) {
@@ -802,13 +833,14 @@
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        const itemSize = 150;
-        const padding = 10;
+        const cardW = 160;
+        const cardH = 190;
+        const padding = 15;
         const cols = Math.min(6, collectedItems.length);
         const rows = Math.ceil(collectedItems.length / cols);
         
-        canvas.width = cols * (itemSize + padding) + padding;
-        canvas.height = rows * (itemSize + padding) + padding;
+        canvas.width = cols * (cardW + padding) + padding;
+        canvas.height = rows * (cardH + padding) + padding;
         
         ctx.fillStyle = '#0b0d13';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -822,15 +854,113 @@
             img.onload = () => {
                 const r = index % cols;
                 const c = Math.floor(index / cols);
-                const x = padding + r * (itemSize + padding);
-                const y = padding + c * (itemSize + padding);
+                const x = padding + r * (cardW + padding);
+                const y = padding + c * (cardH + padding);
                 
-                ctx.fillStyle = '#181c25';
-                ctx.fillRect(x, y, itemSize, itemSize);
+                const rarity = sprite.rarity || 'Rare';
                 
-                const sDim = Math.min(img.width, img.height);
-                ctx.drawImage(img, x + padding, y + padding, itemSize - padding*2, itemSize - padding*2);
-                
+                // 1. Render Card Frame Base
+                ctx.fillStyle = '#0f141d';
+                ctx.fillRect(x, y, cardW, cardH);
+
+                // 2. Render Rarity Background Gradient Layer
+                const innerH = cardH - 30;
+                let bgGrad = ctx.createLinearGradient(x, y, x, y + innerH);
+                let accentColor = '#004A8E';
+                let tagTxtColor = '#00FFFB';
+
+                if (rarity === 'Rare') {
+                    bgGrad.addColorStop(0, '#104273'); bgGrad.addColorStop(1, '#081a35');
+                    accentColor = '#004A8E'; tagTxtColor = '#00FFFB';
+                } else if (rarity === 'Epic') {
+                    bgGrad.addColorStop(0, '#4d1566'); bgGrad.addColorStop(1, '#1e052c');
+                    accentColor = '#511D7F'; tagTxtColor = '#ED2BFF';
+                } else if (rarity === 'Legendary') {
+                    bgGrad.addColorStop(0, '#743e0a'); bgGrad.addColorStop(1, '#301702');
+                    accentColor = '#8E4122'; tagTxtColor = '#FBC568';
+                } else if (rarity === 'Mythic') {
+                    bgGrad.addColorStop(0, '#6c1212'); bgGrad.addColorStop(1, '#2b0606');
+                    accentColor = '#80622A'; tagTxtColor = '#FFF1A9';
+                } else if (rarity === 'Special') {
+                    bgGrad.addColorStop(0, '#134641'); bgGrad.addColorStop(1, '#061d1b');
+                    accentColor = '#51f7cc'; tagTxtColor = '#000000';
+                }
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(x, y, cardW, innerH);
+
+                // 3. Render Special Rainbow Aura Overlay
+                if (rarity === 'Special') {
+                    let rainGrad = ctx.createLinearGradient(x, y, x + cardW, y + innerH);
+                    rainGrad.addColorStop(0, 'rgba(81, 247, 204, 0.35)');
+                    rainGrad.addColorStop(0.28, 'rgba(125, 169, 252, 0.35)');
+                    rainGrad.addColorStop(0.62, 'rgba(227, 116, 238, 0.35)');
+                    rainGrad.addColorStop(0.85, 'rgba(255, 182, 161, 0.35)');
+                    rainGrad.addColorStop(1, 'rgba(181, 246, 158, 0.35)');
+                    ctx.fillStyle = rainGrad;
+                    ctx.fillRect(x, y, cardW, innerH);
+                }
+
+                // 4. Draw Sprite Image
+                const maxImgDim = cardW * 0.82;
+                let iw = img.width;
+                let ih = img.height;
+                let ratio = Math.min(maxImgDim / iw, maxImgDim / ih);
+                let nw = iw * ratio;
+                let nh = ih * ratio;
+                let ix = x + (cardW - nw) / 2;
+                let iy = y + (innerH - nh) / 2;
+                ctx.drawImage(img, ix, iy, nw, nh);
+
+                // 5. Draw Slanted Rarity Text Badge Layout
+                ctx.save();
+                if (rarity === 'Special') {
+                    let badgeGrad = ctx.createLinearGradient(x, y + innerH - 18, x + 75, y + innerH - 18);
+                    badgeGrad.addColorStop(0, '#51f7cc'); badgeGrad.addColorStop(0.28, '#7da9fc');
+                    badgeGrad.addColorStop(0.62, '#e374ee'); badgeGrad.addColorStop(0.85, '#ffb6a1');
+                    badgeGrad.addColorStop(1, '#b5f69e');
+                    ctx.fillStyle = badgeGrad;
+                } else {
+                    ctx.fillStyle = accentColor;
+                }
+                ctx.beginPath();
+                ctx.moveTo(x, y + innerH - 18);
+                ctx.lineTo(x + 70, y + innerH - 18);
+                ctx.lineTo(x + 82, y + innerH);
+                ctx.lineTo(x, y + innerH);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                ctx.fillStyle = tagTxtColor;
+                ctx.font = '900 11px Oswald';
+                ctx.textAlign = 'left';
+                ctx.fillText(rarity === 'Mythic' ? 'MYTHIC' : rarity, x + 6, y + innerH - 5);
+
+                // 6. Draw Centered Title Text Footer Strip Box
+                ctx.fillStyle = 'rgba(15, 20, 29, 0.9)';
+                ctx.fillRect(x, y + innerH, cardW, 30);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '700 12px Oswald';
+                ctx.textAlign = 'center';
+                ctx.fillText(sprite.name, x + (cardW / 2), y + innerH + 19);
+
+                // 7. Base Card Underlay Accent Line Border strip
+                ctx.fillStyle = accentColor;
+                if (rarity === 'Special') {
+                    let baseGrad = ctx.createLinearGradient(x, y + cardH - 4, x + cardW, y + cardH - 4);
+                    baseGrad.addColorStop(0, '#51f7cc'); baseGrad.addColorStop(0.28, '#7da9fc');
+                    baseGrad.addColorStop(0.62, '#e374ee'); baseGrad.addColorStop(0.85, '#ffb6a1');
+                    baseGrad.addColorStop(1, '#b5f69e');
+                    ctx.fillStyle = baseGrad;
+                }
+                ctx.fillRect(x, y + cardH - 4, cardW, 4);
+
+                // Outer standard structural frame contour border wrap
+                ctx.strokeStyle = '#1a2233';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, cardW, cardH);
+
                 loadedCount++;
                 if (loadedCount === collectedItems.length) {
                     const dataUrl = canvas.toDataURL('image/png');
