@@ -40,6 +40,7 @@ const baseSprites = [
     { id: "demon_basic", name: "Demon", theme: "Basic", rarity: "Epic", unreleased: false },
     { id: "demon_gold", name: "Gold Demon", theme: "Gold", rarity: "Special", unreleased: false },
     { id: "demon_candy", name: "Gummy Demon", theme: "Candy", rarity: "Special", unreleased: false },
+	{ id: "demon_galaxy", name: "Galaxy Demon", theme: "Galaxy", rarity: "Special", unreleased: true },
     { id: "demon_gem", name: "Gem Demon", theme: "Gem", rarity: "Special", unreleased: true },
 
 	{ id: "punk_basic", name: "Punk", theme: "Basic", rarity: "Legendary", unreleased: false },
