@@ -35,11 +35,11 @@
     /* Dynamic theme variants */
     --theme-bg-Basic: linear-gradient(180deg, #1c2436 0%, #0c0f17 100%);
     --theme-bg-Gold: linear-gradient(180deg, #61460b 0%, #241a02 100%);
-    --theme-bg-Candy: linear-gradient(180deg, #6b183f 0%, #260514 100%);
-    --theme-bg-Galaxy: linear-gradient(180deg, #1f1145 0%, #080314 100%);
-    --theme-bg-Gem: linear-gradient(180deg, #114c47 0%, #041a18 100%);
-    --theme-bg-Holofoil: linear-gradient(180deg, #204454 0%, #09171f 100%);
-    --theme-bg-Cube: linear-gradient(180deg, #154b5e 0%, #04161c 100%);
+    --theme-bg-Candy: linear-gradient(180deg, #AE39CD 0%, #40892C 100%);
+    --theme-bg-Galaxy: linear-gradient(180deg, #5A33BE 0%, #48649E 100%);
+    --theme-bg-Gem: linear-gradient(180deg, #C5C5C2 0%, #2C3232 100%);
+    --theme-bg-Holofoil: linear-gradient(180deg, #BB96C3 0%, #5AA6A3 100%);
+    --theme-bg-Cube: linear-gradient(180deg, #a855f7 0%, #4c1d95 100%);
 }
 
 * {
