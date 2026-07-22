@@ -190,7 +190,7 @@ function buildCardHTML(sprite, isObtained, isMastered) {
 }
 
 function sortAndGroupSprites(itemsArray) {
-    const themeOrder = ["Basic", "Gold", "Candy", "Galaxy", "Gem", "Holofoil", "Rift"];
+    const themeOrder = ["Basic", "Gold", "Candy", "Galaxy", "Holofoil", "Cube", "Gem"];
     return [...itemsArray].sort((a, b) => {
         let themeA = a.sprite ? a.sprite.theme : a.theme;
         let themeB = b.sprite ? b.sprite.theme : b.theme;
@@ -559,7 +559,7 @@ function exportCanvasImage(mode) {
                         else if (theme === 'Galaxy') ctx.fillStyle = '#1f1145';
                         else if (theme === 'Gem') ctx.fillStyle = '#114c47';
                         else if (theme === 'Holofoil') ctx.fillStyle = '#204454';
-                        else if (theme === 'Rift') ctx.fillStyle = '#154b5e';
+                        else if (theme === 'Cube') ctx.fillStyle = '#154b5e';
                     }
                     ctx.fillRect(x, y, cardW, innerH);
                 } else {
@@ -575,7 +575,7 @@ function exportCanvasImage(mode) {
                         else if (theme === 'Galaxy') { bgGrad.addColorStop(0, '#1f1145'); bgGrad.addColorStop(1, '#080314'); }
                         else if (theme === 'Gem') { bgGrad.addColorStop(0, '#114c47'); bgGrad.addColorStop(1, '#041a18'); }
                         else if (theme === 'Holofoil') { bgGrad.addColorStop(0, '#204454'); bgGrad.addColorStop(1, '#09171f'); }
-                        else if (theme === 'Rift') { bgGrad.addColorStop(0, '#154b5e'); bgGrad.addColorStop(1, '#04161c'); }
+                        else if (theme === 'Cube') { bgGrad.addColorStop(0, '#154b5e'); bgGrad.addColorStop(1, '#04161c'); }
                     }
                     ctx.fillStyle = bgGrad;
                     ctx.fillRect(x, y, cardW, innerH);
