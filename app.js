@@ -27,8 +27,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Check for OAuth callback (code in URL)
-    handleOAuthCallback();
+   // Handle OAuth callback redirect
+function handleOAuthCallback() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    
+    if (error) {
+        console.error('OAuth error:', error);
+        return;
+    }
+    
+    if (code) {
+        // Code received from Epic Games OAuth
+        localStorage.setItem('epic_auth_code', code);
+        
+        // Update button UI
+        const loginBtn = document.getElementById('epicLoginBtn');
+        if (loginBtn) {
+            loginBtn.textContent = 'Logged In ✓';
+            loginBtn.classList.add('logged-in');
+            loginBtn.disabled = true;
+        }
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
 });
 
 // Handle Epic Games login button click
