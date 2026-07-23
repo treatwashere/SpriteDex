@@ -60,7 +60,7 @@ function handleEpicLogin() {
     const params = new URLSearchParams({
         clientId: EPIC_CLIENT_ID,
         responseType: 'code',
-        redirectUri: 'EPIC_REDIRECT_URI',  // ← CHANGED THIS LINE
+        redirectUri: EPIC_REDIRECT_URI,  // ← Uses the constant
         scope: 'basic_profile'
     });
     
