@@ -1,781 +1,1480 @@
-// Application Setup & DOM Elements
-const urlParams = new URLSearchParams(window.location.search);
-const compressedCode = urlParams.get('c');
-const isViewMode = compressedCode !== null;
+/* ===================================================
+   Constants
+   =================================================== */
 
-let obtainedSprites = [];
-let masteredSprites = [];
+const KEYS = {
+    obtained: 'fn_obtained_sprites',
+    mastered: 'fn_mastered_sprites',
+    search: 'fn_state_search',
+    theme: 'fn_state_theme',
+    status: 'fn_state_status_filter',
+    hideMastered: 'fn_state_hide_mastered',
+    sortOrder: 'fn_state_sort_order',
+    showUnreleased: 'fn_state_unreleased',
+    lowFidelity: 'fn_state_low_fidelity',
+};
 
-if (isViewMode) {
-    document.body.classList.add('viewing-shared-collection');
-    if (typeof baseSprites !== 'undefined') {
-        const decoded = decompressCollection(baseSprites, compressedCode);
-        obtainedSprites = decoded.obtained;
-        masteredSprites = decoded.mastered;
+const THEME_ORDER = ['Basic', 'Gold', 'Candy', 'Galaxy', 'Gem', 'Holofoil', 'Cube', 'Rift'];
+const RARITY_ORDER = ['Mythic', 'Legendary', 'Epic', 'Rare', 'Special'];
+const STATUS_FILTERS = ['all', 'owned', 'missing'];
+const SORT_METHODS = ['theme', 'sprite', 'name', 'rarity'];
+const UI_THEME_LABELS = { Candy: 'Gummy' };
+const EXPORT_THEME_LABELS = { Basic: 'NORMAL', Candy: 'GUMMY' };
+const TRADE_THEME_LABELS = { Basic: 'Base', Candy: 'Gummy' };
+const TRACKER_URL = 'https://cghxst.github.io/fnsprites/';
+const CROWN_ICON = '<svg class="crown-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 19h20v2H2v-2zM2 5l5 3.5L12 2l5 6.5L22 5v12H2V5z"/></svg>';
+
+const EXPORT_LAYOUT = {
+    border: 8,
+    sidePad: 20,
+    minCanvasW: 360,
+    compactHeaderW: 760,
+    headerH: 80,
+    compactHeaderH: 132,
+    colHeaderH: 35,
+    cardW: 80,
+    cardH: 100,
+    rowGap: 12,
+    cardGap: 8,
+    labelW: 120,
+    colGap: 60,
+    footerH: 60,
+    maxSingleColumnRows: 6,
+};
+
+/* ===================================================
+   State
+   =================================================== */
+
+const state = {
+    obtained: [],
+    mastered: [],
+    viewMode: false,
+    filters: { search: '', theme: 'all', status: 'all' },
+    settings: {
+        hideMastered: false,
+        sortOrder: 'theme',
+        showUnreleased: false,
+        lowFidelity: false,
+    },
+};
+
+/* ===================================================
+   DOM References
+   =================================================== */
+
+const dom = {
+    viewBanner: document.getElementById('viewBanner'),
+    grid: document.getElementById('spriteGrid'),
+    searchInput: document.getElementById('searchInput'),
+    themeFilter: document.getElementById('themeFilter'),
+    sortOrder: document.getElementById('sortOrder'),
+    statusPills: document.getElementById('statusPills'),
+    hideMastered: document.getElementById('hideMastered'),
+    showUnreleased: document.getElementById('showUnreleased'),
+    lowFidelity: document.getElementById('lowFidelity'),
+    exportDropdown: document.getElementById('exportDropdown'),
+    exportToggle: document.getElementById('exportToggle'),
+    copyDropdown: document.getElementById('copyDropdown'),
+    copyToggle: document.getElementById('copyToggle'),
+    shareBtn: document.getElementById('shareBtn'),
+    copyTradeTextBtn: document.getElementById('copyTradeTextBtn'),
+    copyTradeGridBtn: document.getElementById('copyTradeGridBtn'),
+    collectionRatio: document.getElementById('collectionRatio'),
+    collectionFill: document.getElementById('collectionFill'),
+    masteryRatio: document.getElementById('masteryRatio'),
+    masteryFill: document.getElementById('masteryFill'),
+    exportBackupBtn: document.getElementById('exportBackupBtn'),
+    importBtn: document.getElementById('importBtn'),
+    importInput: document.getElementById('importInput'),
+};
+
+/* ===================================================
+   Persistence
+   =================================================== */
+
+function persist(key, value) {
+    try {
+        localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+    } catch (err) {
+        console.warn('Unable to save tracker state.', err);
     }
-    document.getElementById('viewModeBanner').style.display = 'block';
-} else {
-    obtainedSprites = JSON.parse(localStorage.getItem('fn_obtained_sprites')) || [];
-    masteredSprites = JSON.parse(localStorage.getItem('fn_mastered_sprites')) || [];
 }
 
-const spriteGrid = document.getElementById('spriteGrid');
-const searchInput = document.getElementById('search');
-const themeFilter = document.getElementById('theme-filter');
-const unreleasedSwitch = document.getElementById('unreleased-switch');
-const lowFidelitySwitch = document.getElementById('low-fidelity-switch');
-const shareBtn = document.getElementById('shareBtn');
-const imageBtn = document.getElementById('imageBtn');
-const missingImageBtn = document.getElementById('missingImageBtn');
-const unmasteredImageBtn = document.getElementById('unmasteredImageBtn');
-const masteredImageBtn = document.getElementById('masteredImageBtn');
-
-// New Switches
-const hideMasteredSwitch = document.getElementById('hide-mastered-switch');
-const groupThemeSwitch = document.getElementById('group-theme-switch');
-
-const liveRatio = document.getElementById('live-counter-ratio');
-const liveBarFill = document.getElementById('live-counter-bar');
-const masteryRatio = document.getElementById('mastery-counter-ratio');
-const masteryBarFill = document.getElementById('mastery-counter-bar');
-
-const downloadImagesSwitch = document.getElementById('download-images-switch');
-const downloadSwitchLabel = document.getElementById('download-switch-label');
-const downloadSettingRow = document.getElementById('download-setting-row');
-
-// Detect iOS
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-// Initialize Setting State
-if (isIOS) {
-    // Force false on iOS and lock/disable the UI element so users know it's forced
-    downloadImagesSwitch.checked = false;
-    downloadImagesSwitch.disabled = true;
-    downloadSwitchLabel.textContent = "JUST OPEN IMAGES";
-    downloadSettingRow.style.opacity = "0.6";
-    downloadSettingRow.title = "iOS devices are forced to open images in a new tab.";
-} else {
-    // Default enabled ('true') if non-iOS and nothing saved in localStorage yet
-    const savedDownloadPref = localStorage.getItem('fn_state_download_images');
-    downloadImagesSwitch.checked = savedDownloadPref === null ? true : (savedDownloadPref === 'true');
-    downloadSwitchLabel.textContent = downloadImagesSwitch.checked ? "DOWNLOAD IMAGES" : "JUST OPEN IMAGES";
+function readStoredArray(key) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(value) ? value : [];
+    } catch {
+        return [];
+    }
 }
 
-// RESTORE LAST SAVED STATES FROM LOCAL STORAGE
-if (!isViewMode) {
-    searchInput.value = localStorage.getItem('fn_state_search') || '';
-    themeFilter.value = localStorage.getItem('fn_state_theme') || 'all';
-    unreleasedSwitch.checked = localStorage.getItem('fn_state_unreleased') === 'true';
-    lowFidelitySwitch.checked = localStorage.getItem('fn_state_low_fidelity') === 'true';
-    hideMasteredSwitch.checked = localStorage.getItem('fn_state_hide_mastered') === 'true';
-	if (localStorage.getItem('fn_state_group_theme') === null) {
-		groupThemeSwitch.checked = true;
-	} else {
-		groupThemeSwitch.checked = localStorage.getItem('fn_state_group_theme') === 'true';
-	}
+function uniqueValidIds(ids, validIds = getSpriteIdSet()) {
+    return [...new Set(ids)].filter(id => validIds.has(id));
+}
+
+function saveCollection() {
+    persist(KEYS.obtained, state.obtained);
+    persist(KEYS.mastered, state.mastered);
+}
+
+function load() {
+    const validIds = getSpriteIdSet();
+    state.obtained = uniqueValidIds(readStoredArray(KEYS.obtained), validIds);
+    state.mastered = uniqueValidIds(readStoredArray(KEYS.mastered), validIds)
+        .filter(id => state.obtained.includes(id));
+    state.filters.search = localStorage.getItem(KEYS.search) || '';
+    state.filters.theme = localStorage.getItem(KEYS.theme) || 'all';
+
+    let savedStatus = localStorage.getItem(KEYS.status) || 'all';
+    if (savedStatus === 'obtained') savedStatus = 'owned';
+    state.filters.status = STATUS_FILTERS.includes(savedStatus) ? savedStatus : 'all';
+
+    state.settings.hideMastered = localStorage.getItem(KEYS.hideMastered) === 'true';
     
-    if (lowFidelitySwitch.checked) document.body.classList.add('low-fidelity');
+    let savedSort = localStorage.getItem(KEYS.sortOrder);
+    if (!savedSort) {
+        const legacyGroup = localStorage.getItem('fn_state_group_theme');
+        savedSort = legacyGroup === 'false' ? 'sprite' : 'theme';
+    }
+    state.settings.sortOrder = SORT_METHODS.includes(savedSort) ? savedSort : 'theme';
+
+    state.settings.showUnreleased = localStorage.getItem(KEYS.showUnreleased) === 'true';
+    state.settings.lowFidelity = localStorage.getItem(KEYS.lowFidelity) === 'true';
 }
 
-let currentStatusFilter = localStorage.getItem('fn_state_status_filter') || 'all'; 
+function applyStateToDOM() {
+    dom.searchInput.value = state.filters.search;
+    dom.themeFilter.value = state.filters.theme;
+    dom.sortOrder.value = state.settings.sortOrder;
+    dom.hideMastered.checked = state.settings.hideMastered;
+    dom.showUnreleased.checked = state.settings.showUnreleased;
+    dom.lowFidelity.checked = state.settings.lowFidelity;
+    document.body.classList.toggle('low-fidelity', state.settings.lowFidelity);
 
-const toggleAll = document.getElementById('toggle-all');
-const toggleOwned = document.getElementById('toggle-owned');
-const toggleUnowned = document.getElementById('toggle-unowned');
-
-function setStatusFilter(filterValue, activeButton) {
-    if (isViewMode) return;
-    currentStatusFilter = filterValue;
-    localStorage.setItem('fn_state_status_filter', filterValue);
-    [toggleAll, toggleOwned, toggleUnowned].forEach(btn => btn.classList.remove('active'));
-    activeButton.classList.add('active');
-    renderGrid();
-}
-
-// Set active class on initial load
-if (currentStatusFilter === 'all') toggleAll.classList.add('active');
-else if (currentStatusFilter === 'obtained') toggleOwned.classList.add('active');
-else if (currentStatusFilter === 'missing') toggleUnowned.classList.add('active');
-
-// Hide Creator Card for the Session
-const creatorCard = document.querySelector('.creator-card');
-const closeCreatorBtn = document.getElementById('closeCreatorBtn');
-
-if (sessionStorage.getItem('hide_creator_card') === 'true' && creatorCard) {
-    creatorCard.style.display = 'none';
-}
-
-if (closeCreatorBtn && creatorCard) {
-    closeCreatorBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        creatorCard.style.display = 'none';
-        sessionStorage.setItem('hide_creator_card', 'true');
+    dom.statusPills.querySelectorAll('.pill').forEach(pill => {
+        const match =
+            (pill.dataset.status === 'all' && state.filters.status === 'all') ||
+            (pill.dataset.status === 'owned' && state.filters.status === 'owned') ||
+            (pill.dataset.status === 'missing' && state.filters.status === 'missing');
+        pill.classList.toggle('active', match);
+        pill.setAttribute('aria-pressed', String(match));
     });
 }
 
-toggleAll.addEventListener('click', () => setStatusFilter('all', toggleAll));
-toggleOwned.addEventListener('click', () => setStatusFilter('obtained', toggleOwned));
-toggleUnowned.addEventListener('click', () => setStatusFilter('missing', toggleUnowned));
+/* ===================================================
+   Share Encoding / Decoding
+   =================================================== */
 
-// PERSISTENCE EVENT LISTENERS
-searchInput.addEventListener('input', () => {
-    localStorage.setItem('fn_state_search', searchInput.value);
-    renderGrid();
-});
-themeFilter.addEventListener('change', () => {
-    localStorage.setItem('fn_state_theme', themeFilter.value);
-    renderGrid();
-});
-unreleasedSwitch.addEventListener('change', () => {
-    localStorage.setItem('fn_state_unreleased', unreleasedSwitch.checked);
-    renderGrid();
-});
-hideMasteredSwitch.addEventListener('change', () => {
-    localStorage.setItem('fn_state_hide_mastered', hideMasteredSwitch.checked);
-    renderGrid();
-});
-groupThemeSwitch.addEventListener('change', () => {
-    localStorage.setItem('fn_state_group_theme', groupThemeSwitch.checked);
-    renderGrid();
-});
-lowFidelitySwitch.addEventListener('change', () => {
-    localStorage.setItem('fn_state_low_fidelity', lowFidelitySwitch.checked);
-    if (lowFidelitySwitch.checked) {
-        document.body.classList.add('low-fidelity');
-    } else {
-        document.body.classList.remove('low-fidelity');
+const B64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
+function encodeBits(bits) {
+    while (bits.length % 6 !== 0) {
+        bits += '0';
     }
-});
-downloadImagesSwitch.addEventListener('change', () => {
-    if (isIOS) return; // Ignore on iOS
-    
-    const isDownload = downloadImagesSwitch.checked;
-    downloadSwitchLabel.textContent = isDownload ? "DOWNLOAD IMAGES" : "JUST OPEN IMAGES";
-    localStorage.setItem('fn_state_download_images', isDownload);
-});
-
-function updateCollectionCounter() {
-    if (typeof baseSprites === 'undefined') return;
-    const totalReleased = baseSprites.filter(sprite => !sprite.unreleased).length;
-    const collectedReleased = baseSprites.filter(sprite => !sprite.unreleased && obtainedSprites.includes(sprite.id)).length;
-    const masteredReleased = baseSprites.filter(sprite => !sprite.unreleased && masteredSprites.includes(sprite.id)).length;
-    
-    liveRatio.textContent = `${collectedReleased} / ${totalReleased}`;
-    const collectionPercentage = totalReleased > 0 ? (collectedReleased / totalReleased) * 100 : 0;
-    liveBarFill.style.width = `${collectionPercentage}%`;
-
-    masteryRatio.textContent = `${masteredReleased} / ${totalReleased}`;
-    const masteryPercentage = totalReleased > 0 ? (masteredReleased / totalReleased) * 100 : 0;
-    masteryBarFill.style.width = `${masteryPercentage}%`;
+    let code = '';
+    for (let i = 0; i < bits.length; i += 6) {
+        const val = parseInt(bits.substring(i, i + 6), 2);
+        code += B64_CHARS[val];
+    }
+    return code.replace(/A+$/, '');
 }
 
-function adjustCardFontSizes() {
-    document.querySelectorAll('.card-title-footer span').forEach(span => {
-        const parent = span.parentElement;
-        let currentSize = 16.95;
-        span.style.fontSize = currentSize + 'px';
-        
-        while ((span.scrollWidth > parent.clientWidth) && currentSize > 6) {
-            currentSize -= 0.5;
-            span.style.fontSize = currentSize + 'px';
+function decodeBits(code) {
+    if (!code) return '';
+    let bits = '';
+    for (let i = 0; i < code.length; i++) {
+        const val = B64_CHARS.indexOf(code[i]);
+        if (val === -1) return '';
+        bits += val.toString(2).padStart(6, '0');
+    }
+    return bits;
+}
+
+function compressCollection(sprites, obtained, mastered) {
+    let obtainedBits = '';
+    let masteredBits = '';
+    
+    sprites.forEach(s => {
+        obtainedBits += obtained.includes(s.id) ? '1' : '0';
+        masteredBits += mastered.includes(s.id) ? '1' : '0';
+    });
+
+    const obtainedCode = encodeBits(obtainedBits);
+    const masteredCode = encodeBits(masteredBits);
+
+    if (!masteredCode) {
+        return obtainedCode;
+    }
+    return `${obtainedCode}~${masteredCode}`;
+}
+
+function decompressCollection(sprites, code) {
+    if (!code) return { obtained: [], mastered: [] };
+    
+    const parts = code.split('~');
+    if (parts.length > 2) {
+        return { obtained: [], mastered: [] };
+    }
+
+    const obtainedCode = parts[0];
+    const masteredCode = parts[1] || '';
+
+    if (!/^[A-Za-z0-9\-_]*$/.test(obtainedCode) || !/^[A-Za-z0-9\-_]*$/.test(masteredCode)) {
+        return { obtained: [], mastered: [] };
+    }
+
+    try {
+        const obtainedBits = decodeBits(obtainedCode);
+        const masteredBits = decodeBits(masteredCode);
+
+        const obtained = [];
+        const mastered = [];
+
+        sprites.forEach((s, idx) => {
+            const isObtained = obtainedBits[idx] === '1';
+            const isMastered = masteredBits[idx] === '1';
+
+            if (isObtained) {
+                obtained.push(s.id);
+                if (isMastered) {
+                    mastered.push(s.id);
+                }
+            }
+        });
+
+        return { obtained, mastered };
+    } catch {
+        return { obtained: [], mastered: [] };
+    }
+}
+
+/* ===================================================
+   Toast Notifications
+   =================================================== */
+
+function toast(message, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('visible'));
+    setTimeout(() => {
+        el.classList.remove('visible');
+        el.addEventListener('transitionend', () => el.remove(), { once: true });
+        setTimeout(() => el.remove(), 500);
+    }, 2500);
+}
+
+/* ===================================================
+   Sprite Helpers
+   =================================================== */
+
+function getFamilyKey(sprite) {
+    return sprite.id.split('_')[0];
+}
+
+function getSpriteIdSet(sprites = baseSprites) {
+    return new Set(sprites.map(sprite => sprite.id));
+}
+
+function getReleasedSprites() {
+    return baseSprites.filter(sprite => !sprite.unreleased);
+}
+
+function getFamilyKeys(sprites = getReleasedSprites()) {
+    return sprites.reduce((keys, sprite) => {
+        const key = getFamilyKey(sprite);
+        if (!keys.includes(key)) keys.push(key);
+        return keys;
+    }, []);
+}
+
+function getActiveThemes(sprites = getReleasedSprites()) {
+    return sprites
+        .reduce((themes, sprite) => {
+            if (!themes.includes(sprite.theme)) themes.push(sprite.theme);
+            return themes;
+        }, [])
+        .sort((a, b) => getOrderedIndex(THEME_ORDER, a) - getOrderedIndex(THEME_ORDER, b));
+}
+
+function getOrderedIndex(order, value) {
+    const index = order.indexOf(value);
+    return index === -1 ? Infinity : index;
+}
+
+function getCharName(charKey) {
+    const basicSprite = baseSprites.find(sprite => sprite.id === `${charKey}_basic`);
+    return basicSprite ? basicSprite.name : charKey.charAt(0).toUpperCase() + charKey.slice(1);
+}
+
+function getDisplayName(name) {
+    return name === 'Burnt Peanut' ? name : `${name} Sprite`;
+}
+
+function getUiThemeLabel(theme) {
+    return UI_THEME_LABELS[theme] || theme;
+}
+
+function getExportThemeLabel(theme) {
+    return EXPORT_THEME_LABELS[theme] || theme.toUpperCase();
+}
+
+function getTradeThemeLabel(theme) {
+    return TRADE_THEME_LABELS[theme] || theme;
+}
+
+function getCollectionCounts(sprites = getReleasedSprites()) {
+    return {
+        total: sprites.length,
+        collected: sprites.filter(sprite => isObtained(sprite.id)).length,
+        mastered: sprites.filter(sprite => isMastered(sprite.id)).length,
+    };
+}
+
+function getFamilyThemeMap(sprites) {
+    return sprites.reduce((map, sprite) => {
+        const familyKey = getFamilyKey(sprite);
+        if (!map.has(familyKey)) map.set(familyKey, new Map());
+        map.get(familyKey).set(sprite.theme, sprite);
+        return map;
+    }, new Map());
+}
+
+function isObtained(id) {
+    return state.obtained.includes(id);
+}
+
+function isMastered(id) {
+    return state.mastered.includes(id);
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>'"]/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;',
+    }[char]));
+}
+
+/* ===================================================
+   Progress
+   =================================================== */
+
+function updateProgress() {
+    const { total, collected, mastered } = getCollectionCounts();
+
+    dom.collectionRatio.textContent = `${collected} / ${total}`;
+    dom.collectionFill.style.width = total > 0 ? `${(collected / total) * 100}%` : '0%';
+    dom.masteryRatio.textContent = `${mastered} / ${total}`;
+    dom.masteryFill.style.width = total > 0 ? `${(mastered / total) * 100}%` : '0%';
+}
+/* ===================================================
+   Filtering & Sorting
+   =================================================== */
+
+function filterSprites() {
+    const search = state.filters.search.trim().toLowerCase();
+
+    return baseSprites.filter(sprite => {
+        if (state.settings.hideMastered && isMastered(sprite.id)) return false;
+        if (!state.settings.showUnreleased && sprite.unreleased) return false;
+        if (state.viewMode && (!isObtained(sprite.id) || sprite.unreleased)) return false;
+
+        const matchesSearch = !search || sprite.name.toLowerCase().includes(search);
+        const matchesTheme = state.filters.theme === 'all' || sprite.theme === state.filters.theme;
+
+        let matchesStatus = true;
+        if (!state.viewMode) {
+            const isOwned = isObtained(sprite.id);
+            if (state.filters.status === 'owned') matchesStatus = isOwned;
+            if (state.filters.status === 'missing') matchesStatus = !isOwned;
         }
+
+        return matchesSearch && matchesTheme && matchesStatus;
     });
 }
 
-function buildCardHTML(sprite, isObtained, isMastered) {
-    const itemRarity = sprite.rarity || 'Rare';
-    const unreleasedBadge = sprite.unreleased ? `<div class="status-badge unreleased">UNRELEASED</div>` : '';
-    
-    let badgeHTML = '';
-    let renderedCrownHTML = '';
-    
-    if (isMastered) {
-        badgeHTML = `<div class="status-badge mastered-badge">MASTERED</div>`;
-        renderedCrownHTML = `<div class="rendered-head-crown">👑</div>`; 
-    } else if (isObtained) {
-        badgeHTML = `<div class="status-badge collected">COLLECTED</div>`;
+function sortSprites(items, method) {
+    const sorted = [...items];
+    if (method === 'theme') {
+        return sorted.sort((a, b) => {
+            const idxA = getOrderedIndex(THEME_ORDER, a.theme);
+            const idxB = getOrderedIndex(THEME_ORDER, b.theme);
+            if (idxA !== idxB) return idxA - idxB;
+            return 0;
+        });
     }
-
-    let crownHTML = '';
-    if (isObtained && !isMastered) {
-        crownHTML = `<div class="crown-action-icon" title="Master this Sprite">👑</div>`;
+    if (method === 'sprite') {
+        return sorted.sort((a, b) => {
+            const familyA = getFamilyKey(a);
+            const familyB = getFamilyKey(b);
+            if (familyA !== familyB) return familyA.localeCompare(familyB);
+            return getOrderedIndex(THEME_ORDER, a.theme) - getOrderedIndex(THEME_ORDER, b.theme);
+        });
     }
-
-    const displayRarityText = itemRarity === 'Mythic' ? 'MYTHIC' : itemRarity;
-    const rarityBadge = `<div class="fortnite-rarity-tag">${displayRarityText}</div>`;
-    const inferredImagePath = `sprites/${sprite.id}.png`;
-
-    return `
-        ${unreleasedBadge}
-        ${badgeHTML}
-        ${crownHTML}
-        <div class="card-inner-display">
-            ${renderedCrownHTML}
-            <img src="${inferredImagePath}" class="sprite-img" alt="${sprite.name}" onerror="this.src='https://placehold.co/150?text=Missing+File'">
-            ${rarityBadge}
-        </div>
-        <div class="card-title-footer"><span>${sprite.name}</span></div>
-    `;
+    if (method === 'name') {
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    if (method === 'rarity') {
+        return sorted.sort((a, b) => {
+            const idxA = getOrderedIndex(RARITY_ORDER, a.rarity);
+            const idxB = getOrderedIndex(RARITY_ORDER, b.rarity);
+            if (idxA !== idxB) return idxA - idxB;
+            return a.name.localeCompare(b.name);
+        });
+    }
+    return sorted;
 }
 
-function sortAndGroupSprites(itemsArray) {
-    const themeOrder = ["Basic", "Gold", "Candy", "Galaxy", "Holofoil", "Cube", "Gem"];
-    return [...itemsArray].sort((a, b) => {
-        let themeA = a.sprite ? a.sprite.theme : a.theme;
-        let themeB = b.sprite ? b.sprite.theme : b.theme;
-        return themeOrder.indexOf(themeA) - themeOrder.indexOf(themeB);
-    });
+/* ===================================================
+   Rendering
+   =================================================== */
+
+function populateThemeFilter() {
+    const themes = getActiveThemes(baseSprites);
+    const selectedTheme = themes.includes(state.filters.theme) ? state.filters.theme : 'all';
+
+    dom.themeFilter.replaceChildren(
+        new Option('All themes', 'all'),
+        ...themes.map(theme => new Option(getUiThemeLabel(theme), theme))
+    );
+    state.filters.theme = selectedTheme;
 }
 
 function renderGrid() {
-    spriteGrid.innerHTML = '';
-    if (typeof baseSprites === 'undefined') return;
+    let items = filterSprites();
+    items = sortSprites(items, state.settings.sortOrder);
 
-    updateCollectionCounter();
+    const frag = document.createDocumentFragment();
 
-    const searchQuery = searchInput.value.toLowerCase();
-    const selectedTheme = themeFilter.value;
-    const showUnreleased = unreleasedSwitch.checked;
-    const hideMastered = hideMasteredSwitch.checked;
-    const groupByThemeSetting = groupThemeSwitch.checked;
-
-    let itemsToRender = [];
-    
-    // Completely standalone mapping grid rendering logic
-    baseSprites.forEach(sprite => {
-        if (hideMastered && masteredSprites.includes(sprite.id)) return;
-        const matchesSearch = sprite.name.toLowerCase().includes(searchQuery);
-        const matchesTheme = selectedTheme === 'all' || sprite.theme === selectedTheme;
-        if (matchesSearch && matchesTheme) {
-            itemsToRender.push({ sprite: sprite, isBase: false, variants: [] });
-        }
-    });
-
-    if (groupByThemeSetting) {
-        itemsToRender = sortAndGroupSprites(itemsToRender);
-    }
-
-    itemsToRender.forEach(item => {
-        const sprite = item.sprite;
-        const isObtained = obtainedSprites.includes(sprite.id);
-        const isMastered = masteredSprites.includes(sprite.id);
-        
-        if (isViewMode && (!isObtained || sprite.unreleased)) return;
-        if (!isViewMode && !showUnreleased && sprite.unreleased) return;
-
-        let matchesStatus = true;
-        if (!isViewMode) {
-            if (currentStatusFilter === 'obtained') matchesStatus = isObtained;
-            if (currentStatusFilter === 'missing') matchesStatus = !isObtained;
-        }
-        if (!matchesStatus) return;
+    for (const sprite of items) {
+        const obtained = isObtained(sprite.id);
+        const mastered = isMastered(sprite.id);
 
         const card = document.createElement('div');
         card.dataset.id = sprite.id;
-        
-        const itemRarity = sprite.rarity || 'Rare';
-        const itemTheme = sprite.theme || 'Basic';
-        let masteryClass = isMastered ? ' mastered' : '';
-        card.className = `sprite-card rarity-${itemRarity} theme-${itemTheme} ${isObtained ? 'obtained' : ''}${masteryClass}`;
-        card.innerHTML = buildCardHTML(sprite, isObtained, isMastered);
 
-        if (!isViewMode && isObtained && !isMastered) {
-            const crownIcon = card.querySelector('.crown-action-icon');
-            if (crownIcon) {
-                crownIcon.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    toggleMastery(sprite.id);
-                });
-            }
+        const classes = ['card', `rarity-${sprite.rarity}`, `theme-${sprite.theme}`];
+        if (obtained) classes.push('obtained');
+        if (mastered) classes.push('mastered');
+        card.className = classes.join(' ');
+        if (!state.viewMode) {
+            card.tabIndex = 0;
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-pressed', String(obtained));
+            card.setAttribute('aria-label', `${obtained ? 'Remove' : 'Mark'} ${sprite.name} ${obtained ? 'from' : 'as part of'} your collection`);
         }
 
-        if (!isViewMode) {
-            card.addEventListener('click', (e) => {
-                e.preventDefault();
-                toggleObtained(sprite.id, card);
-            });
-        }
-        spriteGrid.appendChild(card);
-    });
-    adjustCardFontSizes();
+        card.innerHTML = buildCardHTML(sprite, obtained, mastered);
+        frag.appendChild(card);
+    }
+
+    dom.grid.innerHTML = '';
+    dom.grid.appendChild(frag);
+    fitCardNames();
+    updateProgress();
 }
 
-function toggleObtained(id, cardElement) {
-    if (obtainedSprites.includes(id)) {
-        obtainedSprites = obtainedSprites.filter(item => item !== id);
-        masteredSprites = masteredSprites.filter(item => item !== id);
-    } else {
-        obtainedSprites.push(id);
+function buildCardHTML(sprite, obtained, mastered) {
+    const rarityLabel = sprite.rarity === 'Mythic' ? 'MYTHIC' : sprite.rarity.toUpperCase();
+    const imgPath = `sprites/${encodeURIComponent(sprite.id)}.png`;
+    const safeName = escapeHTML(sprite.name);
+    const safeRarity = escapeHTML(rarityLabel);
+
+    let badge = '';
+    if (sprite.unreleased) {
+        badge = '<div class="card-badge unreleased-badge">Unreleased</div>';
+    } else if (mastered) {
+        badge = '<div class="card-badge mastered-badge">Mastered</div>';
+    } else if (obtained) {
+        badge = '<div class="card-badge collected">Collected</div>';
     }
-    localStorage.setItem('fn_obtained_sprites', JSON.stringify(obtainedSprites));
-    localStorage.setItem('fn_mastered_sprites', JSON.stringify(masteredSprites));
+
+    let crownAction = '';
+    if (obtained && !mastered && !state.viewMode) {
+        crownAction = `<button class="card-crown" type="button" title="Toggle mastery" aria-label="Mark ${safeName} as mastered">${CROWN_ICON}</button>`;
+    }
+
+    let crownDisplay = '';
+    if (mastered) {
+        crownDisplay = `<div class="card-crown-display">${CROWN_ICON}</div>`;
+    }
+
+    return `${badge}${crownAction}
+        <div class="card-display">
+            ${crownDisplay}
+            <img src="${imgPath}" alt="${safeName}" loading="lazy">
+            <div class="card-rarity">${safeRarity}</div>
+        </div>
+        <div class="card-name"><span>${safeName}</span></div>`;
+}
+
+function fitCardNames() {
+    dom.grid.querySelectorAll('.card-name span').forEach(span => {
+        const parent = span.parentElement;
+        if (!parent || parent.clientWidth === 0) return;
+        let size = 14;
+        span.style.fontSize = size + 'px';
+        while (span.scrollWidth > parent.clientWidth && size > 8) {
+            size -= 0.5;
+            span.style.fontSize = size + 'px';
+        }
+    });
+}
+
+/* ===================================================
+   Collection Actions
+   =================================================== */
+
+function toggleObtained(id) {
+    if (isObtained(id)) {
+        state.obtained = state.obtained.filter(x => x !== id);
+        state.mastered = state.mastered.filter(x => x !== id);
+    } else {
+        state.obtained.push(id);
+    }
+    saveCollection();
     renderGrid();
 }
 
 function toggleMastery(id) {
-    if (!obtainedSprites.includes(id)) return;
-    if (!masteredSprites.includes(id)) {
-        masteredSprites.push(id);
+    if (!isObtained(id)) return;
+    if (isMastered(id)) {
+        state.mastered = state.mastered.filter(x => x !== id);
     } else {
-        masteredSprites = masteredSprites.filter(item => item !== id);
+        state.mastered.push(id);
     }
-    localStorage.setItem('fn_mastered_sprites', JSON.stringify(masteredSprites));
+    saveCollection();
     renderGrid();
 }
 
-shareBtn.addEventListener('click', () => {
-    if (typeof baseSprites === 'undefined') return;
-    const compressionCodeString = compressCollection(baseSprites, obtainedSprites, masteredSprites);
-    const shareURL = `${window.location.origin}${window.location.pathname}?c=${compressionCodeString}`;
-    navigator.clipboard.writeText(shareURL).then(() => { alert("Share link copied!"); });
-});
+/* ===================================================
+   Canvas Export - Helpers
+   =================================================== */
 
-// ==========================================
-// ADAPTIVE EXPORT GRAPHICS ENGINE V3
-// ==========================================
-function exportCanvasImage(mode) {
-    if (typeof baseSprites === 'undefined') return;
-    
-    let targetItems = [];
-    let titleL1 = "FORTNITE SPRITES TRACKER:";
-    let titleL2 = "";
-    let fallbackTitleText = "";
-    let titleColor = "#32cd32"; 
-    let fileName = "fnsprites-collection";
+function getRarityGradient(rarity, theme) {
+    const map = {
+        Rare: ['#104273', '#081a35'],
+        Epic: ['#4d1566', '#1e052c'],
+        Legendary: ['#743e0a', '#301702'],
+        Mythic: ['#70531c', '#2e2107'],
+    };
+    if (rarity !== 'Special') return map[rarity] || map.Rare;
 
-    if (mode === 'collected') {
-        targetItems = baseSprites.filter(s => obtainedSprites.includes(s.id));
-        titleL2 = "MY COLLECTION";
-        fallbackTitleText = "MY COLLECTION";
-        if (targetItems.length === 0) { alert("No collected sprites to export!"); return; }
-    } else if (mode === 'missing') {
-        targetItems = baseSprites.filter(s => !s.unreleased && !obtainedSprites.includes(s.id));
-        titleL1 = "FORTNITE SPRITES TRACKER:";
-        titleL2 = "I'M LOOKING FOR THESE!";
-        fallbackTitleText = "MISSING SPRITES";
-        titleColor = "#ef4444"; 
-        fileName = "fnsprites-missing";
-        if (targetItems.length === 0) { alert("You aren't missing any released sprites!"); return; }
-    } else if (mode === 'unmastered') {
-        targetItems = baseSprites.filter(s => obtainedSprites.includes(s.id) && !masteredSprites.includes(s.id));
-        titleL1 = "FORTNITE SPRITES TRACKER:";
-        titleL2 = "UNMASTERED SPRITES";
-        fallbackTitleText = "UNMASTERED";
-        titleColor = "#00f0ff"; 
-        fileName = "fnsprites-unmastered";
-        if (targetItems.length === 0) { alert("You don't have any unmastered sprites!"); return; }
-    } else if (mode === 'mastered') {
-        targetItems = baseSprites.filter(s => obtainedSprites.includes(s.id) && masteredSprites.includes(s.id));
-        titleL1 = "FORTNITE SPRITES TRACKER:";
-        titleL2 = "MASTERED SPRITES";
-        fallbackTitleText = "MASTERED";
-        titleColor = "#ffd700"; 
-        fileName = "fnsprites-mastered";
-        if (targetItems.length === 0) { alert("You don't have any mastered sprites!"); return; }
-    }
-
-    if (groupThemeSwitch.checked) {
-        targetItems = sortAndGroupSprites(targetItems);
-    }
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    const cardW = 160;
-    const cardH = 200; 
-    const padding = 15;
-    const borderThickness = 8;
-    const footerLinkHeight = 55; 
-    
-    const maxCols = 6;
-    const cols = Math.min(maxCols, targetItems.length);
-    const rows = Math.ceil(targetItems.length / cols);
-    const innerWidth = cols * (cardW + padding) + padding;
-
-    const renderBars = (mode === 'collected');
-    const inlineBarsPossible = (cols >= 5);
-    const ultraSmallStacked = (cols <= 2) && renderBars;
-    
-    let topBarHeight = 55; 
-    if (renderBars) {
-        if (ultraSmallStacked) topBarHeight = 135; 
-        else if (!inlineBarsPossible) topBarHeight = 95; 
-    }
-
-    canvas.width = innerWidth + (borderThickness * 2);
-    canvas.height = topBarHeight + (rows * (cardH + padding) + padding) + footerLinkHeight + (borderThickness * 2);
-    
-    const mascotImg = new Image();
-    mascotImg.src = 'siteimages/staticsprite.png';
-    
-    mascotImg.onload = () => { processRenderChain(); };
-    mascotImg.onerror = () => { processRenderChain(); };
-
-    function processRenderChain() {
-        ctx.fillStyle = titleColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = '#0b0d13';
-        ctx.fillRect(borderThickness, borderThickness, canvas.width - (borderThickness * 2), canvas.height - (borderThickness * 2));
-        
-        ctx.fillStyle = '#181c25';
-        ctx.fillRect(borderThickness, borderThickness, canvas.width - (borderThickness * 2), topBarHeight);
-        
-        ctx.strokeStyle = titleColor;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(borderThickness, borderThickness + topBarHeight);
-        ctx.lineTo(canvas.width - borderThickness, borderThickness + topBarHeight);
-        ctx.stroke();
-
-        let textLeftBoundary = borderThickness + padding;
-        if (mascotImg.complete && mascotImg.naturalWidth > 0) {
-            let mascotY = borderThickness + (topBarHeight / 2) - 16;
-            if (ultraSmallStacked) mascotY = borderThickness + 12;
-            ctx.drawImage(mascotImg, textLeftBoundary, mascotY, 32, 32);
-            textLeftBoundary += 42;
-        }
-
-        ctx.fillStyle = titleColor;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-
-        let availableTextWidth = canvas.width - textLeftBoundary - borderThickness - padding;
-        if (renderBars && inlineBarsPossible) availableTextWidth -= 260;
-
-        let fullCombinedText = `${titleL1} ${titleL2}`;
-        if (mode === 'missing' && targetItems.length === 1) {
-            fullCombinedText = "MISSING";
-            fallbackTitleText = "MISSING";
-        }
-
-        let useFallback = false;
-        ctx.font = 'italic 900 24px "Oswald", sans-serif';
-        if (ctx.measureText(fullCombinedText).width > availableTextWidth) {
-            if (ultraSmallStacked || inlineBarsPossible) {
-                useFallback = true;
-            }
-        }
-
-        if (ultraSmallStacked) {
-            ctx.font = 'italic 900 20px "Oswald", sans-serif';
-            ctx.fillText(fallbackTitleText, textLeftBoundary, borderThickness + 28);
-        } else {
-            let idealFontSize = 32; 
-            let printText = useFallback ? fallbackTitleText : fullCombinedText;
-            
-            ctx.font = `italic 900 ${idealFontSize}px "Oswald", sans-serif`;
-            while (ctx.measureText(printText).width > availableTextWidth && idealFontSize > 12) {
-                idealFontSize -= 1;
-                ctx.font = `italic 900 ${idealFontSize}px "Oswald", sans-serif`;
-            }
-            
-            let centerTextY = borderThickness + (topBarHeight / 2);
-            if (renderBars && !inlineBarsPossible) {
-                centerTextY = borderThickness + 30; 
-            }
-            ctx.fillText(printText, textLeftBoundary, centerTextY);
-        }
-
-        if (renderBars) {
-            const totalReleased = baseSprites.filter(sprite => !sprite.unreleased).length;
-            const colCount = baseSprites.filter(sprite => !sprite.unreleased && obtainedSprites.includes(sprite.id)).length;
-            const masCount = baseSprites.filter(sprite => !sprite.unreleased && masteredSprites.includes(sprite.id)).length;
-
-            let colPct = totalReleased > 0 ? (colCount / totalReleased) : 0;
-            let masPct = totalReleased > 0 ? (masCount / totalReleased) : 0;
-
-            if (inlineBarsPossible) {
-                ctx.font = '900 12px "Oswald", sans-serif';
-                let bWidth = 110;
-                let rightEdge = canvas.width - borderThickness - padding;
-                
-                ctx.fillStyle = '#22c55e';
-                ctx.fillText(`COLLECTION: ${colCount}/${totalReleased}`, rightEdge - (bWidth * 2) - 25, borderThickness + 16);
-                ctx.fillStyle = '#0e1117';
-                ctx.fillRect(rightEdge - (bWidth * 2) - 25, borderThickness + 31, bWidth, 12);
-                ctx.strokeStyle = '#3b4253';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(rightEdge - (bWidth * 2) - 25, borderThickness + 31, bWidth, 12);
-                ctx.fillStyle = '#22c55e';
-                ctx.fillRect(rightEdge - (bWidth * 2) - 25, borderThickness + 32, (bWidth) * colPct, 10);
-
-                ctx.fillStyle = '#ffd700';
-                ctx.fillText(`MASTERY: ${masCount}/${totalReleased}`, rightEdge - bWidth, borderThickness + 16);
-                ctx.fillStyle = '#0e1117';
-                ctx.fillRect(rightEdge - bWidth, borderThickness + 31, bWidth, 12);
-                ctx.strokeRect(rightEdge - bWidth, borderThickness + 31, bWidth, 12);
-                ctx.fillStyle = '#ffd700';
-                ctx.fillRect(rightEdge - bWidth, borderThickness + 32, (bWidth) * masPct, 10);
-            } else if (ultraSmallStacked) {
-                ctx.font = '900 11px "Oswald", sans-serif';
-                let fullBarW = canvas.width - (borderThickness * 2) - (padding * 2);
-                
-                let colY = borderThickness + 54;
-                ctx.fillStyle = '#22c55e';
-                ctx.fillText(`COLLECTION: ${colCount} / ${totalReleased}`, borderThickness + padding, colY);
-                ctx.fillStyle = '#0e1117';
-                ctx.fillRect(borderThickness + padding, colY + 10, fullBarW, 12);
-                ctx.strokeStyle = '#3b4253';
-                ctx.strokeRect(borderThickness + padding, colY + 10, fullBarW, 12);
-                ctx.fillStyle = '#22c55e';
-                ctx.fillRect(borderThickness + padding, colY + 11, fullBarW * colPct, 10);
-
-                let masY = borderThickness + 94;
-                ctx.fillStyle = '#ffd700';
-                ctx.fillText(`MASTERY: ${masCount} / ${totalReleased}`, borderThickness + padding, masY);
-                ctx.fillStyle = '#0e1117';
-                ctx.fillRect(borderThickness + padding, masY + 10, fullBarW, 12);
-                ctx.strokeStyle = '#3b4253';
-                ctx.strokeRect(borderThickness + padding, masY + 10, fullBarW, 12);
-                ctx.fillStyle = '#ffd700';
-                ctx.fillRect(borderThickness + padding, masY + 11, fullBarW * masPct, 10);
-            } else {
-                ctx.font = '900 12px "Oswald", sans-serif';
-                let midY = borderThickness + 68;
-                
-                ctx.fillStyle = '#22c55e';
-                ctx.fillText(`COLLECTION: ${colCount} / ${totalReleased}`, borderThickness + padding, midY);
-                ctx.fillStyle = '#0e1117';
-                ctx.fillRect(borderThickness + padding + 135, midY - 6, 85, 12);
-                ctx.strokeStyle = '#3b4253';
-                ctx.strokeRect(borderThickness + padding + 135, midY - 6, 85, 12);
-                ctx.fillStyle = '#22c55e';
-                ctx.fillRect(borderThickness + padding + 135, midY - 5, 85 * colPct, 10);
-
-                ctx.fillStyle = '#ffd700';
-                ctx.fillText(`MASTERY: ${masCount} / ${totalReleased}`, borderThickness + padding + 240, midY);
-                ctx.fillStyle = '#0e1117';
-                ctx.fillRect(borderThickness + padding + 335, midY - 6, 85, 12);
-                ctx.strokeRect(borderThickness + padding + 335, midY - 6, 85, 12);
-                ctx.fillStyle = '#ffd700';
-                ctx.fillRect(borderThickness + padding + 335, midY - 5, 85 * masPct, 10);
-            }
-        }
-        
-        let loadedCount = 0;
-        targetItems.forEach((sprite, index) => {
-            const img = new Image();
-            // img.crossOrigin = 'anonymous';
-            img.src = `sprites/${sprite.id}.png`;
-            
-            img.onload = () => {
-                const r = index % cols;
-                const c = Math.floor(index / cols);
-                const x = borderThickness + padding + r * (cardW + padding);
-                const y = borderThickness + topBarHeight + padding + c * (cardH + padding);
-                
-                const rarity = sprite.rarity || 'Rare';
-                const theme = sprite.theme || 'Basic';
-                const isMastered = masteredSprites.includes(sprite.id);
-                const isLowFidelity = lowFidelitySwitch.checked;
-                
-                ctx.fillStyle = '#0f141d';
-                ctx.fillRect(x, y, cardW, cardH);
-
-                const innerH = cardH - 38; 
-                
-                if (isLowFidelity) {
-                    if (rarity === 'Rare') ctx.fillStyle = '#104273';
-                    else if (rarity === 'Epic') ctx.fillStyle = '#4d1566';
-                    else if (rarity === 'Legendary') ctx.fillStyle = '#743e0a';
-                    else if (rarity === 'Mythic') ctx.fillStyle = '#70531c';
-                    else if (rarity === 'Special') {
-                        if (theme === 'Basic') ctx.fillStyle = '#1c2436';
-                        else if (theme === 'Gold') ctx.fillStyle = '#61460b';
-                        else if (theme === 'Candy') ctx.fillStyle = '#6b183f';
-                        else if (theme === 'Galaxy') ctx.fillStyle = '#1f1145';
-                        else if (theme === 'Gem') ctx.fillStyle = '#114c47';
-                        else if (theme === 'Holofoil') ctx.fillStyle = '#204454';
-                        else if (theme === 'Cube') ctx.fillStyle = '#154b5e';
-                    }
-                    ctx.fillRect(x, y, cardW, innerH);
-                } else {
-                    let bgGrad = ctx.createLinearGradient(x, y, x, y + innerH);
-                    if (rarity === 'Rare') { bgGrad.addColorStop(0, '#104273'); bgGrad.addColorStop(1, '#081a35'); }
-                    else if (rarity === 'Epic') { bgGrad.addColorStop(0, '#4d1566'); bgGrad.addColorStop(1, '#1e052c'); }
-                    else if (rarity === 'Legendary') { bgGrad.addColorStop(0, '#743e0a'); bgGrad.addColorStop(1, '#301702'); }
-                    else if (rarity === 'Mythic') { bgGrad.addColorStop(0, '#70531c'); bgGrad.addColorStop(1, '#2e2107'); }
-                    else if (rarity === 'Special') {
-                        if (theme === 'Basic') { bgGrad.addColorStop(0, '#1c2436'); bgGrad.addColorStop(1, '#0c0f17'); }
-                        else if (theme === 'Gold') { bgGrad.addColorStop(0, '#61460b'); bgGrad.addColorStop(1, '#241a02'); }
-                        else if (theme === 'Candy') { bgGrad.addColorStop(0, '#6b183f'); bgGrad.addColorStop(1, '#260514'); }
-                        else if (theme === 'Galaxy') { bgGrad.addColorStop(0, '#1f1145'); bgGrad.addColorStop(1, '#080314'); }
-                        else if (theme === 'Gem') { bgGrad.addColorStop(0, '#114c47'); bgGrad.addColorStop(1, '#041a18'); }
-                        else if (theme === 'Holofoil') { bgGrad.addColorStop(0, '#204454'); bgGrad.addColorStop(1, '#09171f'); }
-                        else if (theme === 'Cube') { bgGrad.addColorStop(0, '#154b5e'); bgGrad.addColorStop(1, '#04161c'); }
-                    }
-                    ctx.fillStyle = bgGrad;
-                    ctx.fillRect(x, y, cardW, innerH);
-
-                    if (rarity === 'Special') {
-                        let rainGrad = ctx.createLinearGradient(x, y, x + cardW, y + innerH);
-                        rainGrad.addColorStop(0, 'rgba(81, 247, 204, 0.25)');
-                        rainGrad.addColorStop(0.5, 'rgba(227, 116, 238, 0.35)');
-                        rainGrad.addColorStop(1, 'rgba(181, 246, 158, 0.25)');
-                        ctx.fillStyle = rainGrad;
-                        ctx.fillRect(x, y, cardW, innerH);
-                    }
-
-                    let shineGrad = ctx.createLinearGradient(x, y, x, y + innerH);
-                    shineGrad.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
-                    shineGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                    ctx.fillStyle = shineGrad;
-                    ctx.fillRect(x, y, cardW, innerH);
-                }
-
-                const maxImgDim = cardW * 0.82;
-                let ratio = Math.min(maxImgDim / img.width, maxImgDim / img.height);
-                let nw = img.width * ratio;
-                let nh = img.height * ratio;
-                ctx.drawImage(img, x + (cardW - nw) / 2, y + (innerH - nh) / 2, nw, nh);
-
-                if (mode === 'collected' || mode === 'unmastered' || mode === 'mastered') {
-                    if (isMastered) {
-                        ctx.save();
-                        ctx.fillStyle = '#ffd700';
-                        ctx.font = '900 13px "Oswald", sans-serif'; 
-                        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                        ctx.shadowBlur = 3;
-                        ctx.textAlign = 'left';
-                        ctx.textBaseline = 'top';
-                        ctx.fillText('MASTERED', x + 6, y + 6);
-                        ctx.restore();
-                    } else {
-                        ctx.save();
-                        ctx.fillStyle = '#22c55e';
-                        ctx.font = '900 13px "Oswald", sans-serif'; 
-                        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                        ctx.shadowBlur = 3;
-                        ctx.textAlign = 'left';
-                        ctx.textBaseline = 'top';
-                        ctx.fillText('COLLECTED', x + 6, y + 6);
-                        ctx.restore();
-                    }
-                }
-
-                let tagColor = '#004A8E';
-                let txtColor = '#00FFFB';
-                if (rarity === 'Epic') { tagColor = '#511D7F'; txtColor = '#ED2BFF'; }
-                else if (rarity === 'Legendary') { tagColor = '#8E4122'; txtColor = '#FBC568'; }
-                else if (rarity === 'Mythic') { tagColor = '#80622A'; txtColor = '#FFF1A9'; }
-                else if (rarity === 'Special') { tagColor = '#51f7cc'; txtColor = '#000000'; }
-
-                ctx.save();
-                if (rarity === 'Special' && !isLowFidelity) {
-                    let badgeGrad = ctx.createLinearGradient(x, y + innerH - 18, x + 75, y + innerH - 18);
-                    badgeGrad.addColorStop(0, '#51f7cc'); badgeGrad.addColorStop(0.5, '#e374ee'); badgeGrad.addColorStop(1, '#b5f69e');
-                    ctx.fillStyle = badgeGrad;
-                } else {
-                    ctx.fillStyle = tagColor;
-                }
-                ctx.beginPath();
-                ctx.moveTo(x, y + innerH - 18);
-                ctx.lineTo(x + 70, y + innerH - 18);
-                ctx.lineTo(x + 82, y + innerH);
-                ctx.lineTo(x, y + innerH);
-                ctx.closePath();
-                ctx.fill();
-                ctx.restore();
-
-                ctx.fillStyle = txtColor;
-                ctx.font = '900 13px "Oswald", sans-serif';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'middle'; 
-                ctx.fillText(rarity === 'Mythic' ? 'MYTHIC' : rarity.toUpperCase(), x + 6, y + innerH - 9);
-
-                ctx.fillStyle = 'rgba(15, 20, 29, 0.9)';
-                ctx.fillRect(x, y + innerH, cardW, 38);
-
-                ctx.fillStyle = '#ffffff';
-                let displayNameText = sprite.name.toUpperCase();
-                
-                let calculatedFontSize = 16.95; 
-                ctx.font = `${calculatedFontSize}px "Oswald", sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                while((ctx.measureText(displayNameText).width > (cardW - 8)) && calculatedFontSize > 6) {
-                    calculatedFontSize -= 0.5;
-                    ctx.font = `${calculatedFontSize}px "Oswald", sans-serif`;
-                }
-                ctx.fillText(displayNameText, x + (cardW / 2), y + innerH + 19);
-
-                ctx.fillStyle = isMastered ? '#ffd700' : tagColor;
-                ctx.fillRect(x, y + cardH - 4, cardW, 4);
-
-                ctx.strokeStyle = isMastered ? '#ffd700' : '#1a2233';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(x, y, cardW, cardH);
-
-                loadedCount++;
-                if (loadedCount === targetItems.length) {
-                    finalizeCanvas(canvas, footerLinkHeight, borderThickness, fileName);
-                }
-            };
-            
-            img.onerror = () => {
-                loadedCount++;
-                if (loadedCount === targetItems.length) {
-                    finalizeCanvas(canvas, footerLinkHeight, borderThickness, fileName);
-                }
-            };
-        });
-    }
+    const themes = {
+        Basic: ['#1c2436', '#0c0f17'], Gold: ['#61460b', '#241a02'],
+        Candy: ['#6b183f', '#260514'], Galaxy: ['#1f1145', '#080314'],
+        Gem: ['#114c47', '#041a18'], Holofoil: ['#204454', '#09171f'],
+        Cube: ['#4c1d95', '#1e0b3d'],
+        Rift: ['#154b5e', '#04161c'],
+    };
+    return themes[theme] || themes.Basic;
 }
 
-function finalizeCanvas(canvas, footerLinkHeight, borderThickness, fileName) {
-    const ctx = canvas.getContext('2d');
-    
-    ctx.fillStyle = '#0e1117';
-    ctx.fillRect(borderThickness, canvas.height - footerLinkHeight - borderThickness, canvas.width - (borderThickness * 2), footerLinkHeight);
-    
-    ctx.fillStyle = '#ffffff';
-    let cleanUrlString = "staticvacant.github.io/fnsprites/";
-    let targetFontPix = 24;
-    ctx.font = `bold ${targetFontPix}px "Oswald", sans-serif`;
+function getRarityTagColors(rarity) {
+    const map = {
+        Rare: ['#004A8E', '#00FFFB'], Epic: ['#511D7F', '#ED2BFF'],
+        Legendary: ['#8E4122', '#FBC568'], Mythic: ['#80622A', '#FFF1A9'],
+        Special: ['#51f7cc', '#000000'],
+    };
+    return map[rarity] || map.Rare;
+}
+
+function getExportConfig(mode) {
+    const releasedSprites = getReleasedSprites();
+    const configs = {
+        collected: {
+            items: releasedSprites.filter(sprite => isObtained(sprite.id)),
+            titleL1: 'FORTNITE SPRITES TRACKER:', titleL2: 'MY COLLECTION',
+            color: '#32cd32',
+            filename: 'fnsprites-collection', emptyMsg: 'No collected sprites to export!',
+        },
+        missing: {
+            items: releasedSprites.filter(sprite => !isObtained(sprite.id)),
+            titleL1: 'FORTNITE SPRITES TRACKER:', titleL2: "I'M LOOKING FOR THESE!",
+            color: '#ef4444',
+            filename: 'fnsprites-missing', emptyMsg: "You aren't missing any released sprites!",
+        },
+        unmastered: {
+            items: releasedSprites.filter(sprite => isObtained(sprite.id) && !isMastered(sprite.id)),
+            titleL1: 'FORTNITE SPRITES TRACKER:', titleL2: 'UNMASTERED SPRITES',
+            color: '#00f0ff',
+            filename: 'fnsprites-unmastered', emptyMsg: "You don't have any unmastered sprites!",
+        },
+        mastered: {
+            items: releasedSprites.filter(sprite => isObtained(sprite.id) && isMastered(sprite.id)),
+            titleL1: 'FORTNITE SPRITES TRACKER:', titleL2: 'MASTERED SPRITES',
+            color: '#ffd700',
+            filename: 'fnsprites-mastered', emptyMsg: "You don't have any mastered sprites!",
+        },
+        trade: {
+            items: releasedSprites,
+            titleL1: 'FORTNITE SPRITES TRACKER:', titleL2: 'TRADE CARD',
+            color: '#ffd700',
+            filename: 'fnsprites-trade-card', emptyMsg: 'No sprites to export!',
+        },
+    };
+
+    const config = configs[mode];
+    if (!config || config.items.length === 0) {
+        toast(config?.emptyMsg || 'Nothing to export!', 'error');
+        return null;
+    }
+    return config;
+}
+
+function getExportCardState(sprite, mode) {
+    const isOwned = isObtained(sprite.id);
+    const mastered = isMastered(sprite.id);
+
+    if (mode === 'trade') return isOwned ? (mastered ? 'mastered' : 'owned') : 'missing_gray';
+    if (mode === 'collected') return isOwned ? (mastered ? 'mastered' : 'owned') : 'empty';
+    if (mode === 'missing') return !isOwned ? 'missing_color' : 'empty';
+    if (mode === 'mastered') return mastered ? 'mastered' : 'empty';
+    if (mode === 'unmastered') return isOwned && !mastered ? 'unmastered' : 'empty';
+    return 'empty';
+}
+
+function loadImage(item) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve({ id: item.id, img, success: true });
+        img.onerror = () => resolve({ id: item.id, img, success: false });
+        img.src = item.src;
+    });
+}
+
+function drawCrown(ctx, cx, cy) {
+    ctx.save();
+    ctx.fillStyle = '#ffd700';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.2;
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 7, cy + 5);
+    ctx.lineTo(cx + 7, cy + 5);
+    ctx.lineTo(cx + 7, cy - 2);
+    ctx.lineTo(cx + 3, cy + 1.5);
+    ctx.lineTo(cx, cy - 4.5);
+    ctx.lineTo(cx - 3, cy + 1.5);
+    ctx.lineTo(cx - 7, cy - 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawMiniCard(ctx, sprite, x, y, w, h, cardState, imageMap) {
+    if (cardState === 'empty') {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        drawRoundRect(ctx, x, y, w, h, 8);
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
+
+    const rarity = sprite.rarity || 'Rare';
+    const theme = sprite.theme || 'Basic';
+    const innerH = h - 22; // 100 - 22 = 78
+
+    const isMastered = cardState === 'mastered';
+    const isGrayed = cardState === 'missing_gray';
+    const isMissing = cardState === 'missing_gray' || cardState === 'missing_color';
+
+    /* Card base background */
+    ctx.fillStyle = '#0f141d';
+    ctx.beginPath();
+    drawRoundRect(ctx, x, y, w, h, 8);
+    ctx.fill();
+
+    /* Rarity background */
+    ctx.save();
+    ctx.beginPath();
+    drawRoundRect(ctx, x, y, w, innerH, 8);
+    ctx.clip();
+
+    const grad = ctx.createLinearGradient(x, y, x, y + innerH);
+    const [c1, c2] = getRarityGradient(rarity, theme);
+    grad.addColorStop(0, c1);
+    grad.addColorStop(1, c2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, w, innerH);
+
+    /* Special rainbow overlay */
+    if (rarity === 'Special') {
+        const rainbow = ctx.createLinearGradient(x, y, x + w, y + innerH);
+        rainbow.addColorStop(0, 'rgba(81,247,204,0.25)');
+        rainbow.addColorStop(0.5, 'rgba(227,116,238,0.35)');
+        rainbow.addColorStop(1, 'rgba(181,246,158,0.25)');
+        ctx.fillStyle = rainbow;
+        ctx.fillRect(x, y, w, innerH);
+    }
+
+    /* Highlight shine */
+    const shine = ctx.createLinearGradient(x, y, x, y + innerH);
+    shine.addColorStop(0, 'rgba(255,255,255,0.12)');
+    shine.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = shine;
+    ctx.fillRect(x, y, w, innerH);
+
+    if (isGrayed) {
+        ctx.fillStyle = 'rgba(11, 13, 20, 0.45)';
+        ctx.fillRect(x, y, w, innerH);
+    }
+    ctx.restore();
+
+    /* Sprite image */
+    const img = imageMap[sprite.id];
+    if (img && img.complete && img.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        drawRoundRect(ctx, x, y, w, innerH, 8);
+        ctx.clip();
+
+        if (isGrayed) {
+            try {
+                ctx.filter = 'grayscale(100%) brightness(48%)';
+            } catch {}
+        }
+        const maxDim = w * 0.82;
+        const ratio = Math.min(maxDim / img.width, maxDim / img.height);
+        const nw = img.width * ratio;
+        const nh = img.height * ratio;
+        ctx.drawImage(img, x + (w - nw) / 2, y + (innerH - nh) / 2, nw, nh);
+        ctx.restore();
+
+        if (isGrayed) {
+            ctx.fillStyle = 'rgba(15, 20, 30, 0.15)';
+            ctx.beginPath();
+            drawRoundRect(ctx, x, y, w, innerH, 8);
+            ctx.fill();
+        }
+    }
+
+    /* Status label */
+    ctx.save();
+    ctx.font = '900 8.5px "Oswald", sans-serif';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 2;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    let labelText = 'COLLECTED';
+    let labelColor = '#22c55e';
+    if (isMastered) {
+        labelText = 'MASTERED';
+        labelColor = '#ffd700';
+    } else if (isMissing) {
+        labelText = 'MISSING';
+        labelColor = '#ef4444';
+    }
+
+    ctx.fillStyle = labelColor;
+    ctx.fillText(labelText, x + 5, y + 5);
+    ctx.restore();
+
+    /* Rarity tag (angled shape) */
+    const [tagBg, tagText] = getRarityTagColors(rarity);
+    ctx.save();
+    ctx.beginPath();
+    drawRoundRect(ctx, x, y, w, innerH, 8);
+    ctx.clip();
+
+    if (rarity === 'Special') {
+        const tg = ctx.createLinearGradient(x, y + innerH - 12, x + w * 0.6, y + innerH - 12);
+        tg.addColorStop(0, '#51f7cc');
+        tg.addColorStop(0.5, '#e374ee');
+        tg.addColorStop(1, '#b5f69e');
+        ctx.fillStyle = tg;
+    } else {
+        ctx.fillStyle = tagBg;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x, y + innerH - 12);
+    ctx.lineTo(x + w * 0.48, y + innerH - 12);
+    ctx.lineTo(x + w * 0.58, y + innerH);
+    ctx.lineTo(x, y + innerH);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = tagText;
+    ctx.font = '900 8.5px "Oswald", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(rarity === 'Mythic' ? 'MYTHIC' : rarity.toUpperCase(), x + 4, y + innerH - 6);
+
+    /* Name/Theme footer */
+    ctx.fillStyle = 'rgba(15,20,29,0.9)';
+    ctx.fillRect(x, y + innerH, w, 22);
+
+    ctx.fillStyle = isMissing ? '#ef4444' : '#ffffff';
+    let fontSize = 9.5;
+    const name = sprite.name.toUpperCase();
+    ctx.font = `bold ${fontSize}px "Oswald", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
-    const maxWebWidth = canvas.width - (borderThickness * 2) - 30;
-    while (ctx.measureText(cleanUrlString).width > maxWebWidth && targetFontPix > 8) {
-        targetFontPix -= 1;
-        ctx.font = `bold ${targetFontPix}px "Oswald", sans-serif`;
+    while (ctx.measureText(name).width > w - 6 && fontSize > 6.5) {
+        fontSize -= 0.5;
+        ctx.font = `bold ${fontSize}px "Oswald", sans-serif`;
     }
-    
-    ctx.fillText(cleanUrlString, canvas.width / 2, canvas.height - borderThickness - (footerLinkHeight / 2));
+    ctx.fillText(name, x + w / 2, y + innerH + 11);
 
-    // Convert canvas to Blob
-    canvas.toBlob((blob) => {
-        if (!blob) return;
-        const blobUrl = URL.createObjectURL(blob);
-        
-        // Force opening in tab if on iOS OR if the user turned off "Download Images"
-        const shouldOpenInTab = isIOS || !downloadImagesSwitch.checked;
+    /* Bottom accent + border */
+    let bottomAccentColor = tagBg;
+    let borderColor = '#1a2233';
+    if (isMastered) {
+        bottomAccentColor = '#ffd700';
+        borderColor = '#ffd700';
+    } else if (isMissing) {
+        bottomAccentColor = '#ef4444';
+    } else if (cardState === 'unmastered') {
+        bottomAccentColor = '#00f0ff';
+    }
 
-        if (shouldOpenInTab) {
-            const newWindow = window.open(blobUrl, '_blank');
-            if (!newWindow) {
-                // If pop-up blocker triggered, fallback to same tab
-                window.location.href = blobUrl;
-            }
-        } else {
-            // Direct download flow
-            const link = document.createElement('a');
-            link.download = `${fileName}.png`;
-            link.href = blobUrl;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-        }
-    }, 'image/png');
+    ctx.fillStyle = bottomAccentColor;
+    ctx.fillRect(x, y + h - 3, w, 3);
+
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = isMastered ? 2 : 1;
+    ctx.beginPath();
+    drawRoundRect(ctx, x, y, w, h, 8);
+    ctx.stroke();
+
+    /* Crown at top center */
+    if (isMastered) {
+        drawCrown(ctx, x + w / 2, y - 2);
+    }
 }
 
-imageBtn.addEventListener('click', () => exportCanvasImage('collected'));
-missingImageBtn.addEventListener('click', () => exportCanvasImage('missing'));
-unmasteredImageBtn.addEventListener('click', () => exportCanvasImage('unmastered'));
-masteredImageBtn.addEventListener('click', () => exportCanvasImage('mastered'));
+/* ===================================================
+   Canvas Export - Status Icons & Trade Card Exporter
+   =================================================== */
 
-renderGrid();
+function drawRoundRect(ctx, x, y, width, height, radius) {
+    if (ctx.roundRect) {
+        ctx.roundRect(x, y, width, height, radius);
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+}
+
+function exportImage(mode) {
+    const config = getExportConfig(mode);
+    if (!config) return;
+
+    const releasedSprites = getReleasedSprites();
+    const charKeys = getFamilyKeys(releasedSprites);
+    const familyThemeMap = getFamilyThemeMap(releasedSprites);
+    const allThemeColumns = getActiveThemes(releasedSprites).map(theme => ({
+        name: getExportThemeLabel(theme),
+        themeName: theme,
+    }));
+
+    const imagesToLoad = [
+        { id: 'mascot', src: 'siteimages/staticsprite.png' },
+        ...releasedSprites.map(sprite => ({ id: sprite.id, src: `sprites/${encodeURIComponent(sprite.id)}.png` })),
+    ];
+
+    toast('Generating image export...', 'info');
+
+    Promise.all(imagesToLoad.map(loadImage)).then(loadedImages => {
+        const imageMap = {};
+        loadedImages.forEach(res => {
+            if (res.success) {
+                imageMap[res.id] = res.img;
+            }
+        });
+
+        const activeCharKeys = charKeys.filter(charKey => {
+            return [...familyThemeMap.get(charKey).values()]
+                .some(sprite => getExportCardState(sprite, mode) !== 'empty');
+        });
+
+        const themeColumns = allThemeColumns.filter(t => {
+            return activeCharKeys.some(charKey => {
+                const sprite = familyThemeMap.get(charKey).get(t.themeName);
+                return sprite && getExportCardState(sprite, mode) !== 'empty';
+            });
+        });
+
+        const layout = EXPORT_LAYOUT;
+        const tableColumnCount = activeCharKeys.length > layout.maxSingleColumnRows ? 2 : 1;
+        const half = tableColumnCount === 1 ? activeCharKeys.length : Math.ceil(activeCharKeys.length / 2);
+        const leftColumnKeys = activeCharKeys.slice(0, half);
+        const rightColumnKeys = activeCharKeys.slice(half);
+
+        const maxRows = Math.max(leftColumnKeys.length, rightColumnKeys.length);
+        const rowH = layout.cardH + layout.rowGap;
+        const rowsH = maxRows * rowH;
+        const cardBlockW = themeColumns.length * layout.cardW + Math.max(0, themeColumns.length - 1) * layout.cardGap;
+        const colW = layout.labelW + cardBlockW;
+        const tableW = colW * tableColumnCount + layout.colGap * Math.max(0, tableColumnCount - 1);
+        const canvasW = Math.max(layout.minCanvasW, tableW + layout.border * 2 + layout.sidePad * 2);
+        const useCompactHeader = canvasW < layout.compactHeaderW;
+        const headerH = useCompactHeader ? layout.compactHeaderH : layout.headerH;
+        const canvasH = layout.border * 2 + headerH + layout.colHeaderH + rowsH + layout.footerH;
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+
+        // Border gradient
+        let borderGrad;
+        if (mode === 'trade') {
+            borderGrad = ctx.createLinearGradient(0, 0, canvasW, canvasH);
+            borderGrad.addColorStop(0, '#ffd700');
+            borderGrad.addColorStop(1, '#22c55e');
+            ctx.fillStyle = borderGrad;
+        } else {
+            ctx.fillStyle = config.color;
+            borderGrad = config.color;
+        }
+        ctx.fillRect(0, 0, canvasW, canvasH);
+
+        // Inner Background
+        ctx.fillStyle = '#0b0d13';
+        ctx.fillRect(layout.border, layout.border, canvasW - layout.border * 2, canvasH - layout.border * 2);
+
+        // Header Background
+        ctx.fillStyle = '#181c25';
+        ctx.fillRect(layout.border, layout.border, canvasW - layout.border * 2, headerH);
+
+        // Header separator
+        ctx.strokeStyle = borderGrad;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(layout.border, layout.border + headerH);
+        ctx.lineTo(canvasW - layout.border, layout.border + headerH);
+        ctx.stroke();
+
+        // Header Stats / Progress Bars
+        const { total: totalCount, collected: ownedCount, mastered: masteredCount } = getCollectionCounts(releasedSprites);
+        const colPct = totalCount > 0 ? ownedCount / totalCount : 0;
+        const masPct = totalCount > 0 ? masteredCount / totalCount : 0;
+
+        const bw = 110;
+        const statGap = 25;
+        const mascotImg = imageMap['mascot'];
+        const fullTitle = `${config.titleL1} ${config.titleL2}`;
+
+        const fitFont = (text, maxWidth, startSize, minSize, style) => {
+            let size = startSize;
+            ctx.font = `${style} ${size}px "Oswald", sans-serif`;
+            while (ctx.measureText(text).width > maxWidth && size > minSize) {
+                size -= 0.5;
+                ctx.font = `${style} ${size}px "Oswald", sans-serif`;
+            }
+            return size;
+        };
+
+        const drawProgressBlock = (label, count, total, pct, x, y, color) => {
+            ctx.font = '900 12px "Oswald", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(`${label}: ${count}/${total}`, x, y);
+            ctx.fillStyle = '#0e1117';
+            ctx.fillRect(x, y + 15, bw, 12);
+            ctx.strokeStyle = '#3b4253';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x, y + 15, bw, 12);
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y + 16, bw * pct, 10);
+        };
+
+        if (useCompactHeader) {
+            const topY = layout.border + 24;
+            const mascotSize = 24;
+            const mascotGap = mascotImg ? 8 : 0;
+            fitFont(config.titleL1, canvasW - layout.border * 2 - 60, 14, 10, 'italic 900');
+            const titleL1W = ctx.measureText(config.titleL1).width;
+            const titleGroupW = titleL1W + (mascotImg ? mascotSize + mascotGap : 0);
+            let groupX = (canvasW - titleGroupW) / 2;
+            if (mascotImg) {
+                ctx.drawImage(mascotImg, groupX, topY - mascotSize / 2, mascotSize, mascotSize);
+                groupX += mascotSize + mascotGap;
+            }
+            ctx.fillStyle = borderGrad;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(config.titleL1, groupX, topY);
+
+            fitFont(config.titleL2, canvasW - layout.border * 2 - 36, 20, 13, 'italic 900');
+            ctx.fillStyle = borderGrad;
+            ctx.textAlign = 'center';
+            ctx.fillText(config.titleL2, canvasW / 2, layout.border + 52);
+
+            const statsW = bw * 2 + statGap;
+            const statsX = (canvasW - statsW) / 2;
+            const statsY = layout.border + 86;
+            drawProgressBlock('COLLECTION', ownedCount, totalCount, colPct, statsX, statsY, '#22c55e');
+            drawProgressBlock('MASTERY', masteredCount, totalCount, masPct, statsX + bw + statGap, statsY, '#ffd700');
+        } else {
+            const statsRight = canvasW - layout.border - layout.sidePad;
+            const collectionX = statsRight - bw * 2 - statGap;
+            const masteryX = statsRight - bw;
+            const titleX = layout.border + layout.sidePad;
+            const mascotSize = 32;
+            const mascotGap = mascotImg ? 10 : 0;
+            const titleMaxW = collectionX - titleX - 20;
+
+            fitFont(fullTitle, titleMaxW - (mascotImg ? mascotSize + mascotGap : 0), 26, 16, 'italic 900');
+            ctx.fillStyle = borderGrad;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            let textLeft = titleX;
+            if (mascotImg) {
+                ctx.drawImage(mascotImg, textLeft, layout.border + headerH / 2 - mascotSize / 2, mascotSize, mascotSize);
+                textLeft += mascotSize + mascotGap;
+            }
+            ctx.fillText(fullTitle, textLeft, layout.border + headerH / 2);
+
+            drawProgressBlock('COLLECTION', ownedCount, totalCount, colPct, collectionX, layout.border + 28, '#22c55e');
+            drawProgressBlock('MASTERY', masteredCount, totalCount, masPct, masteryX, layout.border + 28, '#ffd700');
+        }
+
+        const startTableY = layout.border + headerH + layout.colHeaderH;
+
+        // Column headers drawing helper
+        const drawColHeaders = (startX) => {
+            ctx.fillStyle = '#8891a5';
+            ctx.font = 'bold 12px "Oswald", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            themeColumns.forEach((t, i) => {
+                const cx = startX + layout.labelW + i * (layout.cardW + layout.cardGap) + layout.cardW / 2;
+                ctx.fillText(t.name, cx, startTableY - 8);
+            });
+        };
+
+        const leftTableX = layout.border + (canvasW - layout.border * 2 - tableW) / 2;
+        const rightTableX = leftTableX + colW + layout.colGap;
+
+        drawColHeaders(leftTableX);
+        if (rightColumnKeys.length > 0) {
+            drawColHeaders(rightTableX);
+        }
+
+
+
+        // Drawing a single character family row
+        const drawRow = (charKey, startX, y) => {
+            const name = getCharName(charKey);
+            const displayName = getDisplayName(name);
+
+            // Draw label
+            ctx.fillStyle = '#ffffff';
+            let fontSize = 14;
+            ctx.font = `bold ${fontSize}px "Oswald", sans-serif`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            while (ctx.measureText(displayName).width > layout.labelW - 12 && fontSize > 8) {
+                fontSize -= 0.5;
+                ctx.font = `bold ${fontSize}px "Oswald", sans-serif`;
+            }
+            ctx.fillText(displayName, startX + layout.labelW - 10, y + layout.cardH / 2);
+
+            // Draw cards
+            const rowCards = themeColumns.map(t => familyThemeMap.get(charKey).get(t.themeName));
+
+            rowCards.forEach((s, colIndex) => {
+                const cx = startX + layout.labelW + colIndex * (layout.cardW + layout.cardGap);
+
+                if (s) {
+                    const cardState = getExportCardState(s, mode);
+                    drawMiniCard(ctx, s, cx, y, layout.cardW, layout.cardH, cardState, imageMap);
+                } else {
+                    // Empty slot dashed outline
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    drawRoundRect(ctx, cx, y, layout.cardW, layout.cardH, 8);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            });
+        };
+
+        // Draw columns
+        leftColumnKeys.forEach((charKey, idx) => {
+            const y = startTableY + idx * rowH;
+            drawRow(charKey, leftTableX, y);
+        });
+
+        rightColumnKeys.forEach((charKey, idx) => {
+            const y = startTableY + idx * rowH;
+            drawRow(charKey, rightTableX, y);
+        });
+
+        // Footer
+        ctx.fillStyle = '#0e1117';
+        ctx.fillRect(layout.border, canvasH - layout.footerH - layout.border, canvasW - layout.border * 2, layout.footerH);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px "Oswald", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('CGHXST.GITHUB.IO/FNSPRITES', canvasW / 2, canvasH - layout.border - layout.footerH / 2);
+
+        // Download
+        const link = document.createElement('a');
+        link.download = `${config.filename}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        toast('Image exported successfully!', 'success');
+    });
+}
+
+/* ===================================================
+   Trade Text Generation
+   =================================================== */
+
+function generateTradeText() {
+    const releasedSprites = getReleasedSprites();
+    const charKeys = getFamilyKeys(releasedSprites);
+    const familyThemeMap = getFamilyThemeMap(releasedSprites);
+    const { total, collected, mastered } = getCollectionCounts(releasedSprites);
+
+    const buildSection = (title, selectSprites) => {
+        const lines = [];
+
+        charKeys.forEach(charKey => {
+            const name = getCharName(charKey);
+            const themeSprites = [...familyThemeMap.get(charKey).values()];
+            const selected = selectSprites(themeSprites);
+            if (selected.length === 0) return;
+
+            const list = selected.map(sprite => getTradeThemeLabel(sprite.theme)).join(', ');
+            lines.push(`  ▸ ${name} ➔ ${list}`);
+        });
+
+        return lines.length > 0 ? `【 ${title} 】\n${lines.join('\n')}` : '';
+    };
+
+    const sections = [
+        buildSection('LOOKING FOR', sprites => sprites.filter(sprite => !isObtained(sprite.id))),
+        buildSection('HAVE', sprites => sprites.filter(sprite => isObtained(sprite.id))),
+        buildSection('STILL NEED TO MASTER', sprites => sprites.filter(sprite => isObtained(sprite.id) && !isMastered(sprite.id))),
+        [
+            `Collected: ${collected}/${total}`,
+            `Mastered: ${mastered}/${total}`,
+            `Track yours: ${TRACKER_URL}`,
+        ].join('\n'),
+    ].filter(Boolean);
+
+    return sections.join('\n\n');
+}
+
+function generateTradeGridText() {
+    const releasedSprites = getReleasedSprites();
+    const activeThemes = getActiveThemes(releasedSprites);
+    const charKeys = getFamilyKeys(releasedSprites);
+    const familyThemeMap = getFamilyThemeMap(releasedSprites);
+    const { total, collected, mastered } = getCollectionCounts(releasedSprites);
+
+    let lines = [
+        '```',
+        '✅ Owned  👑 Mastered  ❌ Missing',
+        '',
+        `| ${activeThemes.map(getExportThemeLabel).join(' | ')} | Sprite`,
+        '-----------------------',
+    ];
+
+    charKeys.forEach(charKey => {
+        const rowStates = activeThemes.map(theme => {
+            const s = familyThemeMap.get(charKey).get(theme);
+            if (!s) return '⬛';
+            if (isMastered(s.id)) return '👑';
+            return isObtained(s.id) ? '✅' : '❌';
+        });
+
+        lines.push(`| ${rowStates.join(' | ')} | ${getCharName(charKey)}`);
+    });
+
+    lines.push(
+        '',
+        `Collected: ${collected}/${total}`,
+        `Mastered: ${mastered}/${total}`,
+        `Track yours: ${TRACKER_URL}`,
+        '```'
+    );
+
+    return lines.join('\n');
+}
+
+function setDropdownOpen(dropdown, toggle, open) {
+    dropdown.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+}
+
+function closeDropdowns() {
+    setDropdownOpen(dom.exportDropdown, dom.exportToggle, false);
+    setDropdownOpen(dom.copyDropdown, dom.copyToggle, false);
+}
+
+function copyText(text, successMsg, errorMsg) {
+    if (!navigator.clipboard?.writeText) {
+        toast(errorMsg, 'error');
+        return;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+        toast(successMsg, 'success');
+    }).catch(() => {
+        toast(errorMsg, 'error');
+    });
+}
+
+/* ===================================================
+   Event Binding
+   =================================================== */
+
+function bindEvents() {
+    /* Image error delegation (using capture phase since error does not bubble) */
+    dom.grid.addEventListener('error', (e) => {
+        if (e.target.tagName === 'IMG') {
+            e.target.style.opacity = '0.2';
+        }
+    }, true);
+
+    /* Grid - event delegation */
+    dom.grid.addEventListener('click', (e) => {
+        if (state.viewMode) return;
+        const crown = e.target.closest('.card-crown');
+        const card = e.target.closest('.card');
+        if (!card) return;
+
+        const id = card.dataset.id;
+        if (crown) {
+            e.stopPropagation();
+            toggleMastery(id);
+        } else {
+            toggleObtained(id);
+        }
+    });
+
+    dom.grid.addEventListener('keydown', (e) => {
+        if (state.viewMode || e.target.closest('.card-crown')) return;
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+
+        const card = e.target.closest('.card');
+        if (!card) return;
+
+        e.preventDefault();
+        toggleObtained(card.dataset.id);
+    });
+
+    /* Search */
+    dom.searchInput.addEventListener('input', () => {
+        state.filters.search = dom.searchInput.value;
+        persist(KEYS.search, state.filters.search);
+        renderGrid();
+    });
+
+    /* Theme filter */
+    dom.themeFilter.addEventListener('change', () => {
+        state.filters.theme = dom.themeFilter.value;
+        persist(KEYS.theme, state.filters.theme);
+        renderGrid();
+    });
+
+    /* Sort order dropdown */
+    dom.sortOrder.addEventListener('change', () => {
+        state.settings.sortOrder = dom.sortOrder.value;
+        persist(KEYS.sortOrder, state.settings.sortOrder);
+        renderGrid();
+    });
+
+    /* Status pills */
+    dom.statusPills.addEventListener('click', (e) => {
+        const pill = e.target.closest('.pill');
+        if (!pill || state.viewMode) return;
+        state.filters.status = pill.dataset.status;
+        persist(KEYS.status, state.filters.status);
+        applyStateToDOM();
+        renderGrid();
+    });
+
+    /* Toggle switches */
+    const switchKeys = ['hideMastered', 'showUnreleased', 'lowFidelity'];
+    switchKeys.forEach(key => {
+        dom[key].addEventListener('change', () => {
+            state.settings[key] = dom[key].checked;
+            persist(KEYS[key], state.settings[key]);
+            if (key === 'lowFidelity') {
+                document.body.classList.toggle('low-fidelity', dom[key].checked);
+            }
+            renderGrid();
+        });
+    });
+
+    /* Export dropdown */
+    dom.exportToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setDropdownOpen(dom.copyDropdown, dom.copyToggle, false);
+        setDropdownOpen(dom.exportDropdown, dom.exportToggle, !dom.exportDropdown.classList.contains('open'));
+    });
+
+    dom.exportDropdown.querySelectorAll('[data-export]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            exportImage(btn.dataset.export);
+            setDropdownOpen(dom.exportDropdown, dom.exportToggle, false);
+        });
+    });
+
+    /* Copy dropdown */
+    dom.copyToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setDropdownOpen(dom.exportDropdown, dom.exportToggle, false);
+        setDropdownOpen(dom.copyDropdown, dom.copyToggle, !dom.copyDropdown.classList.contains('open'));
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!dom.exportDropdown.contains(e.target)) {
+            setDropdownOpen(dom.exportDropdown, dom.exportToggle, false);
+        }
+        if (!dom.copyDropdown.contains(e.target)) {
+            setDropdownOpen(dom.copyDropdown, dom.copyToggle, false);
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDropdowns();
+    });
+
+    /* Backup Export */
+    dom.exportBackupBtn.addEventListener('click', () => {
+        const data = {
+            obtained: state.obtained,
+            mastered: state.mastered
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = 'fnsprites-backup.json';
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast('Backup file exported!', 'success');
+        setDropdownOpen(dom.exportDropdown, dom.exportToggle, false);
+    });
+
+    /* Backup Import */
+    dom.importBtn.addEventListener('click', () => {
+        if (state.viewMode) {
+            toast('Cannot import in view-only mode!', 'error');
+            return;
+        }
+        dom.importInput.click();
+    });
+
+    dom.importInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (!data || !Array.isArray(data.obtained) || !Array.isArray(data.mastered)) {
+                    throw new Error('Invalid backup file format');
+                }
+
+                const validIds = getSpriteIdSet();
+                const obtained = uniqueValidIds(data.obtained, validIds);
+                const obtainedIds = new Set(obtained);
+                const mastered = uniqueValidIds(data.mastered, validIds)
+                    .filter(id => obtainedIds.has(id));
+
+                state.obtained = obtained;
+                state.mastered = mastered;
+
+                saveCollection();
+
+                renderGrid();
+                toast('Collection imported successfully!', 'success');
+            } catch (err) {
+                toast('Failed to import: invalid JSON format', 'error');
+                console.error(err);
+            }
+            dom.importInput.value = '';
+        };
+        reader.readAsText(file);
+    });
+
+    /* Copy trade list */
+    dom.copyTradeTextBtn.addEventListener('click', () => {
+        copyText(generateTradeText(), 'Trade list copied to clipboard!', 'Failed to copy trade list');
+        setDropdownOpen(dom.copyDropdown, dom.copyToggle, false);
+    });
+
+    /* Copy trade grid */
+    dom.copyTradeGridBtn.addEventListener('click', () => {
+        copyText(generateTradeGridText(), 'Trade grid copied to clipboard!', 'Failed to copy trade grid');
+        setDropdownOpen(dom.copyDropdown, dom.copyToggle, false);
+    });
+
+    /* Share */
+    dom.shareBtn.addEventListener('click', () => {
+        const code = compressCollection(baseSprites, state.obtained, state.mastered);
+        const url = `${location.origin}${location.pathname}?c=${code}`;
+        copyText(url, 'Share link copied to clipboard!', 'Failed to copy link');
+    });
+}
+
+/* ===================================================
+   Initialization
+   =================================================== */
+
+function init() {
+    if (typeof baseSprites === 'undefined') {
+        console.error('baseSprites is not defined.');
+        return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const shareCode = params.get('c');
+
+    if (shareCode) {
+        state.viewMode = true;
+        const decoded = decompressCollection(baseSprites, shareCode);
+        state.obtained = decoded.obtained;
+        state.mastered = decoded.mastered;
+        dom.viewBanner.hidden = false;
+    } else {
+        load();
+    }
+
+    populateThemeFilter();
+    applyStateToDOM();
+    renderGrid();
+    bindEvents();
+}
+
+init();
