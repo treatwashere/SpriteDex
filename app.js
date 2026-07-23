@@ -6,7 +6,7 @@
 
 // Epic Games OAuth Configuration
 const EPIC_CLIENT_ID = 'xyza7891nocrRJguURy12EDDhkap130Y'; // Your Client ID
-const EPIC_REDIRECT_URI = 'https://spritedex-nine.vercel.app/auth/callback';
+const EPIC_REDIRECT_URI = 'https://spritedex-nine.vercel.app/';
 const EPIC_AUTH_URL = 'https://www.epicgames.com/id/oauth/authorize';
 
 // Initialize login button
@@ -60,7 +60,7 @@ function handleEpicLogin() {
     const params = new URLSearchParams({
         clientId: EPIC_CLIENT_ID,
         responseType: 'code',
-        redirectUri: 'https://spritedex-nine.vercel.app/?authCode=1',  // ← CHANGED THIS LINE
+        redirectUri: 'EPIC_REDIRECT_URI',  // ← CHANGED THIS LINE
         scope: 'basic_profile'
     });
     
