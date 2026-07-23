@@ -56,18 +56,16 @@ function handleOAuthCallback() {
 }
 });
 
-// Handle Epic Games login button click
 function handleEpicLogin() {
     const params = new URLSearchParams({
         clientId: EPIC_CLIENT_ID,
         responseType: 'code',
-        redirectUri: EPIC_REDIRECT_URI,
+        redirectUri: 'https://spritedex-nine.vercel.app/?authCode=1',  // ← CHANGED THIS LINE
         scope: 'basic_profile'
     });
     
     window.location.href = `${EPIC_AUTH_URL}?${params.toString()}`;
 }
-
 // Handle OAuth callback redirect
 function handleOAuthCallback() {
     const params = new URLSearchParams(window.location.search);
