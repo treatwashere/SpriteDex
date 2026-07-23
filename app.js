@@ -2,6 +2,96 @@
    Constants
    =================================================== */
 
+// ADD THIS TO YOUR app.js FILE (at the top, after other constants)
+
+// Epic Games OAuth Configuration
+const EPIC_CLIENT_ID = 'xyza7891nocrRJguURy12EDDhkap130Y'; // Your Client ID
+const EPIC_REDIRECT_URI = 'https://spritedex-nine.vercel.app/auth/callback';
+const EPIC_AUTH_URL = 'https://www.epicgames.com/id/oauth/authorize';
+
+// Initialize login button
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('epicLoginBtn');
+    
+    if (loginBtn) {
+        // Check if already logged in
+        const accessToken = localStorage.getItem('epic_access_token');
+        if (accessToken) {
+            loginBtn.textContent = 'Logged In ✓';
+            loginBtn.classList.add('logged-in');
+            loginBtn.disabled = true;
+            // Load user's Sprites data
+            loadUserSprites(accessToken);
+        } else {
+            loginBtn.addEventListener('click', handleEpicLogin);
+        }
+    }
+    
+    // Check for OAuth callback (code in URL)
+    handleOAuthCallback();
+});
+
+// Handle Epic Games login button click
+function handleEpicLogin() {
+    const params = new URLSearchParams({
+        clientId: EPIC_CLIENT_ID,
+        responseType: 'code',
+        redirectUri: EPIC_REDIRECT_URI,
+        scope: 'basic_profile'
+    });
+    
+    window.location.href = `${EPIC_AUTH_URL}?${params.toString()}`;
+}
+
+// Handle OAuth callback redirect
+function handleOAuthCallback() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    
+    if (code) {
+        // Code received from Epic Games OAuth
+        // In production, this code would be exchanged for an access token
+        // For now, we'll store it and show logged-in state
+        localStorage.setItem('epic_auth_code', code);
+        
+        // Update button UI
+        const loginBtn = document.getElementById('epicLoginBtn');
+        if (loginBtn) {
+            loginBtn.textContent = 'Logged In ✓';
+            loginBtn.classList.add('logged-in');
+            loginBtn.disabled = true;
+        }
+        
+        // Remove code from URL (clean up)
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // TODO: Exchange code for access token via backend endpoint
+        // TODO: Fetch user's Fortnite Sprites data using token
+    }
+}
+
+// Placeholder for loading user's Sprites (future implementation)
+function loadUserSprites(accessToken) {
+    // This will be called once we have the access token
+    // For now, it's a placeholder
+    console.log('Ready to load user Sprites with token');
+    
+    // Future: Fetch from Fortnite API
+    // fetch('/api/user/sprites', {
+    //     headers: { 'Authorization': `Bearer ${accessToken}` }
+    // })
+    // .then(res => res.json())
+    // .then(sprites => populateCollectionWithUserData(sprites));
+}
+
+// Logout function (optional)
+function handleLogout() {
+    localStorage.removeItem('epic_access_token');
+    localStorage.removeItem('epic_auth_code');
+    location.reload();
+}
+
+
 const KEYS = {
     obtained: 'fn_obtained_sprites',
     mastered: 'fn_mastered_sprites',
