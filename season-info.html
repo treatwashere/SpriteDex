@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Track, manage, and share your Fortnite Sprites collection and mastery progress.">
     <title>SpriteDex - Season Info</title>
-        <link rel="icon" type="image/png" href="siteimages/staticsprite.png">
+    <link rel="icon" type="image/png" href="siteimages/staticsprite.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
@@ -16,22 +16,29 @@
 <body>
 
 <style>
-
 .seasons {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
 }
 
-.runners {
+.runners, .override {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 3rem;
 }
 
-
+.runners img, .override img {
+  max-width: 100%;
+  height: auto;
+}
 </style>
+
 <div class="app">
     <header class="header">
         <div class="brand">
@@ -44,192 +51,196 @@
     </header>
     
     <div class="seasons">
-    <div class="runners">
-      <header>
-<h1>Runners Season</h1>
-  <img src="siteimages/ch7s3_runners.jpeg" alt="Season 3 Runners Thumbnail">
-  <h1>Fortnite Chapter 7, Season 3: RUNNERS</h1>
-  <p><strong>Fortnite Chapter 7, Season 3: RUNNERS</strong> launched with a complete overhaul of the island and the high-stakes <strong>Sprite Extraction</strong> loop, merging fast-paced tactical mobility with collectible companion abilities that carry over from match to match.</p>
+      <div class="runners">
+        <header>
+          <h1>Runners Season</h1>
+          <img src="siteimages/ch7s3_runners.jpeg" alt="Season 3 Runners Thumbnail">
+          <h1>Fortnite Chapter 7, Season 3: RUNNERS</h1>
+          <p><strong>Fortnite Chapter 7, Season 3: RUNNERS</strong> launched with a complete overhaul of the island and the high-stakes <strong>Sprite Extraction</strong> loop, merging fast-paced tactical mobility with collectible companion abilities that carry over from match to match.</p>
 
-  <hr>
+          <hr>
 
-  <h2>Core Gameplay Mechanic: Collectible Sprites & Extraction</h2>
-  <img src="" alt="Shattered Coast map overview for Chapter 7 Season 3" class="map-image">
+          <h2>Core Gameplay Mechanic: Collectible Sprites & Extraction</h2>
+          <img src="" alt="Shattered Coast map overview for Chapter 7 Season 3" class="map-image">
 
-  <ul>
-    <li><strong>Catching Sprites:</strong> Sprites spawn inside chests, drop from defeated opponents, or hover wildly across the <strong>Shattered Coast</strong> map.</li>
-    <li><strong>Extraction & Exfil:</strong> To keep a Sprite permanently, players must navigate to an Extraction Site terminal and survive a countdown timer.</li>
-    <li><strong>Sprite Dust & Pre-Match Summoning:</strong> Successful extractions award <strong>Sprite Dust</strong>. Before dropping from the Battle Bus, spend Sprite Dust to summon previously extracted Sprites directly into your loadout.</li>
-    <li><strong>Leveling & Rarity Styles:</strong> Sprites level up through exploration, eliminations, and extractions. Rare visual variants also drop—including <strong>Gold</strong> (3x XP), <strong>Gummy</strong> (+20% Sprite Dust), <strong>Galaxy</strong>, and <strong>Holofoil</strong>.</li>
-  </ul>
+          <ul>
+            <li><strong>Catching Sprites:</strong> Sprites spawn inside chests, drop from defeated opponents, or hover wildly across the <strong>Shattered Coast</strong> map.</li>
+            <li><strong>Extraction & Exfil:</strong> To keep a Sprite permanently, players must navigate to an Extraction Site terminal and survive a countdown timer.</li>
+            <li><strong>Sprite Dust & Pre-Match Summoning:</strong> Successful extractions award <strong>Sprite Dust</strong>. Before dropping from the Battle Bus, spend Sprite Dust to summon previously extracted Sprites directly into your loadout.</li>
+            <li><strong>Leveling & Rarity Styles:</strong> Sprites level up through exploration, eliminations, and extractions. Rare visual variants also drop—including <strong>Gold</strong> (3x XP), <strong>Gummy</strong> (+20% Sprite Dust), <strong>Galaxy</strong>, and <strong>Holofoil</strong>.</li>
+          </ul>
 
-  <hr>
+          <hr>
 
-  <h2>Complete Sprite Ability Roster</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Rarity</th>
-        <th>Sprite Name</th>
-        <th>In-Game Buff / Power Ability</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Common / Rare</strong></td>
-        <td>Earth Sprite</td>
-        <td>Increases chances of finding high-rarity items in chests.</td>
-      </tr>
-      <tr>
-        <td><strong>Common / Rare</strong></td>
-        <td>Fire Sprite</td>
-        <td>Triggers a fiery explosion after dealing sustained damage to enemies.</td>
-      </tr>
-      <tr>
-        <td><strong>Common / Rare</strong></td>
-        <td>Water Sprite</td>
-        <td>Restores shield while standing or swimming in water.</td>
-      </tr>
-      <tr>
-        <td><strong>Epic</strong></td>
-        <td>Duck Sprite</td>
-        <td>Replenishes shields whenever you Emote or Jam.</td>
-      </tr>
-      <tr>
-        <td><strong>Epic</strong></td>
-        <td>Demon Sprite</td>
-        <td>Grants health and shield siphon upon eliminating an opponent.</td>
-      </tr>
-      <tr>
-        <td><strong>Epic</strong></td>
-        <td>Ghost Sprite</td>
-        <td>Grants temporary cloak/invisibility while reloading weapons.</td>
-      </tr>
-      <tr>
-        <td><strong>Epic</strong></td>
-        <td>King Sprite</td>
-        <td>Increases pickaxe damage against players and structures.</td>
-      </tr>
-      <tr>
-        <td><strong>Legendary</strong></td>
-        <td>Dream Sprite</td>
-        <td>Grants a random item at each level, bursting into legendary loot at Level 5.</td>
-      </tr>
-      <tr>
-        <td><strong>Mythic</strong></td>
-        <td>Zero Point Sprite</td>
-        <td>Spawns a Shield Bubble Jr. whenever you use a self-healing item.</td>
-      </tr>
-      <tr>
-        <td><strong>Mythic</strong></td>
-        <td>The Burnt Peanut</td>
-        <td>Low chance to drop bonus Mythic loot upon eliminating opponents.</td>
-      </tr>
-      <tr>
-        <td><strong>Mythic</strong></td>
-        <td>John Wick Sprite</td>
-        <td>Knocking an enemy reveals all nearby squadmates on the radar.</td>
-      </tr>
-    </tbody>
-  </table>
+          <h2>Complete Sprite Ability Roster</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Rarity</th>
+                <th>Sprite Name</th>
+                <th>In-Game Buff / Power Ability</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Common / Rare</strong></td>
+                <td>Earth Sprite</td>
+                <td>Increases chances of finding high-rarity items in chests.</td>
+              </tr>
+              <tr>
+                <td><strong>Common / Rare</strong></td>
+                <td>Fire Sprite</td>
+                <td>Triggers a fiery explosion after dealing sustained damage to enemies.</td>
+              </tr>
+              <tr>
+                <td><strong>Common / Rare</strong></td>
+                <td>Water Sprite</td>
+                <td>Restores shield while standing or swimming in water.</td>
+              </tr>
+              <tr>
+                <td><strong>Epic</strong></td>
+                <td>Duck Sprite</td>
+                <td>Replenishes shields whenever you Emote or Jam.</td>
+              </tr>
+              <tr>
+                <td><strong>Epic</strong></td>
+                <td>Demon Sprite</td>
+                <td>Grants health and shield siphon upon eliminating an opponent.</td>
+              </tr>
+              <tr>
+                <td><strong>Epic</strong></td>
+                <td>Ghost Sprite</td>
+                <td>Grants temporary cloak/invisibility while reloading weapons.</td>
+              </tr>
+              <tr>
+                <td><strong>Epic</strong></td>
+                <td>King Sprite</td>
+                <td>Increases pickaxe damage against players and structures.</td>
+              </tr>
+              <tr>
+                <td><strong>Legendary</strong></td>
+                <td>Dream Sprite</td>
+                <td>Grants a random item at each level, bursting into legendary loot at Level 5.</td>
+              </tr>
+              <tr>
+                <td><strong>Mythic</strong></td>
+                <td>Zero Point Sprite</td>
+                <td>Spawns a Shield Bubble Jr. whenever you use a self-healing item.</td>
+              </tr>
+              <tr>
+                <td><strong>Mythic</strong></td>
+                <td>The Burnt Peanut</td>
+                <td>Low chance to drop bonus Mythic loot upon eliminating opponents.</td>
+              </tr>
+              <tr>
+                <td><strong>Mythic</strong></td>
+                <td>John Wick Sprite</td>
+                <td>Knocking an enemy reveals all nearby squadmates on the radar.</td>
+              </tr>
+            </tbody>
+          </table>
 
-  <hr>
+          <hr>
 
-  <h2>Weapons, Mobility & Battle Pass Highlights</h2>
-  <ul>
-    <li><strong>Seven Sliders:</strong> High-speed knee-sliding jets that allow players to slide up slopes, shoot with mid-air slow-motion aiming (ADS), or burst upward into the sky.</li>
-    <li><strong>Lancehead Pistol:</strong> John Wick's signature sidearm featuring a 21-round magazine that can be thrown at enemies during reloads for explosion damage.</li>
-    <li><strong>Battle Pass Roster:</strong> Features <strong>The Guardian</strong> (a customizable mech driven by a Sprite), <strong>John Wick (Pen & Ink)</strong>, <strong>Heatwave PJ</strong>, <strong>Vanguard Slone</strong>, <strong>Cluster</strong>, <strong>Dylan</strong>, <strong>The Voidblade</strong>, and <strong>Wolfe</strong>.</li>
-  </ul>
-  </header>
+          <h2>Weapons, Mobility & Battle Pass Highlights</h2>
+          <ul>
+            <li><strong>Seven Sliders:</strong> High-speed knee-sliding jets that allow players to slide up slopes, shoot with mid-air slow-motion aiming (ADS), or burst upward into the sky.</li>
+            <li><strong>Lancehead Pistol:</strong> John Wick's signature sidearm featuring a 21-round magazine that can be thrown at enemies during reloads for explosion damage.</li>
+            <li><strong>Battle Pass Roster:</strong> Features <strong>The Guardian</strong> (a customizable mech driven by a Sprite), <strong>John Wick (Pen & Ink)</strong>, <strong>Heatwave PJ</strong>, <strong>Vanguard Slone</strong>, <strong>Cluster</strong>, <strong>Dylan</strong>, <strong>The Voidblade</strong>, and <strong>Wolfe</strong>.</li>
+          </ul>
+        </header>
+      </div>
+
+      <div class="override">
+        <header>
+          <h2>Override Season</h2>
+          <img src="siteimages/EN_FNBR_42-00_C7S4_KeyArt_Cartridge_Generic_SocialShare_1920x1080.jpeg" alt="override thumbnail">
+          <h1>Fortnite Chapter 7, Season 4: OVERRIDE</h1>
+          <p><strong>Fortnite Chapter 7, Season 4: OVERRIDE</strong> launched today, bringing a massive video game-themed reboot to the island. Expanding on the Sprite system, Season 4 introduces iconic gaming crossover Sprites, hacked map locations, and game-changing Cartridge mechanics.</p>
+
+          <hr>
+
+          <h2>Core Gameplay Mechanic: Gaming Sprites & Hacked POIs</h2>
+          <img src="" alt="Hacked Island map overview for Chapter 7 Season 4" class="map-image">
+
+          <ul>
+            <li><strong>Gaming Legend Sprites:</strong> Brand-new companion Sprites hover alongside players, granting specialized abilities—such as air gliding with Tails or speed boosts with Sonic.</li>
+            <li><strong>Cartridge Slots:</strong> Players can collect and socket Game Cartridges across the map to override weapon behaviors and environmental hazards.</li>
+            <li><strong>Hacked Island & Rebooted POIs:</strong> Locations like <strong>Sonic Green Hills Zone</strong>, <strong>Geno's HQ</strong> (styled like a liquid-cooled PC), <strong>Temple</strong>, and <strong>The Spire</strong> reshape the island.</li>
+            <li><strong>Expanded Rarity Variants:</strong> Sprites continue to feature XP-boosting rarity variants, including Gold, Gummy, Galaxy, and Holofoil styles.</li>
+          </ul>
+
+          <hr>
+
+          <h2>Complete Sprite Ability Roster</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Rarity</th>
+                <th>Sprite Name</th>
+                <th>In-Game Buff / Power Ability</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Crossover / Mythic</strong></td>
+                <td>Sonic Sprite</td>
+                <td>Grants passive movement speed boosts and hyper-sprint acceleration.</td>
+              </tr>
+              <tr>
+                <td><strong>Crossover / Mythic</strong></td>
+                <td>Tails Sprite</td>
+                <td>Allows players to glide through the air and slow fall from high structures.</td>
+              </tr>
+              <tr>
+                <td><strong>Crossover / Epic</strong></td>
+                <td>Bushranger Sprite</td>
+                <td>Creates temporary natural cover and slowly regenerates health when stationary.</td>
+              </tr>
+              <tr>
+                <td><strong>Crossover / Epic</strong></td>
+                <td>Klombo Sprite</td>
+                <td>Periodically launches healing fruit items and boosts structure damage.</td>
+              </tr>
+              <tr>
+                <td><strong>Crossover / Legendary</strong></td>
+                <td>Jazz Jackrabbit Sprite</td>
+                <td>Increases jump height and reloads weapons faster while airborne.</td>
+              </tr>
+              <tr>
+                <td><strong>Epic</strong></td>
+                <td>Killswitch Sprite</td>
+                <td>Disables nearby enemy vehicle engines and disrupts enemy mini-maps.</td>
+              </tr>
+              <tr>
+                <td><strong>Legendary</strong></td>
+                <td>Crown Sprite</td>
+                <td>Multiplies XP gains and ping-reveals nearby chests upon open.</td>
+              </tr>
+              <tr>
+                <td><strong>Mythic</strong></td>
+                <td>Zero Point Sprite</td>
+                <td>Spawns a Shield Bubble Jr. whenever you use a self-healing item.</td>
+              </tr>
+              <tr>
+                <td><strong>Mythic</strong></td>
+                <td>John Wick Sprite</td>
+                <td>Knocking an enemy reveals all nearby squadmates on the radar.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <hr>
+
+          <h2>Weapons, Mobility & Battle Pass Highlights</h2>
+          <ul>
+            <li><strong>Mega Blaster Arm Cannon:</strong> Mega Man's signature arm cannon allowing charged energy blasts.</li>
+            <li><strong>Midas' Masterpiece & Kingdom Key:</strong> High-stakes Mythics featuring one-shot headshot capability and melee combo overrides.</li>
+            <li><strong>Battle Pass Roster:</strong> Features <strong>Bastian</strong>, <strong>Grace Crowne</strong>, <strong>K1TTYW1NS</strong>, <strong>Wrixel</strong>, <strong>Mali</strong>, <strong>Phantom</strong>, <strong>Geno</strong>, and <strong>Sonic the Hedgehog</strong>.</li>
+          </ul>
+        </header>
+      </div>
+    </div>
 </div>
-
-<div class="override">
-  <header>
-<h2>Override Season</h2>
-<img src="siteimages/EN_FNBR_42-00_C7S4_KeyArt_Cartridge_Generic_SocialShare_1920x1080.jpeg" alt="override thumbnail">
-  <h1>Fortnite Chapter 7, Season 4: OVERRIDE</h1>
-  <p><strong>Fortnite Chapter 7, Season 4: OVERRIDE</strong> launched today, bringing a massive video game-themed reboot to the island. Expanding on the Sprite system, Season 4 introduces iconic gaming crossover Sprites, hacked map locations, and game-changing Cartridge mechanics.</p>
-
-  <hr>
-
-  <h2>Core Gameplay Mechanic: Gaming Sprites & Hacked POIs</h2>
-  <img src="" alt="Hacked Island map overview for Chapter 7 Season 4" class="map-image">
-
-  <ul>
-    <li><strong>Gaming Legend Sprites:</strong> Brand-new companion Sprites hover alongside players, granting specialized abilities—such as air gliding with Tails or speed boosts with Sonic.</li>
-    <li><strong>Cartridge Slots:</strong> Players can collect and socket Game Cartridges across the map to override weapon behaviors and environmental hazards.</li>
-    <li><strong>Hacked Island & Rebooted POIs:</strong> Locations like <strong>Sonic Green Hills Zone</strong>, <strong>Geno's HQ</strong> (styled like a liquid-cooled PC), <strong>Temple</strong>, and <strong>The Spire</strong> reshape the island.</li>
-    <li><strong>Expanded Rarity Variants:</strong> Sprites continue to feature XP-boosting rarity variants, including Gold, Gummy, Galaxy, and Holofoil styles.</li>
-  </ul>
-
-  <hr>
-
-  <h2>Complete Sprite Ability Roster</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Rarity</th>
-        <th>Sprite Name</th>
-        <th>In-Game Buff / Power Ability</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Crossover / Mythic</strong></td>
-        <td>Sonic Sprite</td>
-        <td>Grants passive movement speed boosts and hyper-sprint acceleration.</td>
-      </tr>
-      <tr>
-        <td><strong>Crossover / Mythic</strong></td>
-        <td>Tails Sprite</td>
-        <td>Allows players to glide through the air and slow fall from high structures.</td>
-      </tr>
-      <tr>
-        <td><strong>Crossover / Epic</strong></td>
-        <td>Bushranger Sprite</td>
-        <td>Creates temporary natural cover and slowly regenerates health when stationary.</td>
-      </tr>
-      <tr>
-        <td><strong>Crossover / Epic</strong></td>
-        <td>Klombo Sprite</td>
-        <td>Periodically launches healing fruit items and boosts structure damage.</td>
-      </tr>
-      <tr>
-        <td><strong>Crossover / Legendary</strong></td>
-        <td>Jazz Jackrabbit Sprite</td>
-        <td>Increases jump height and reloads weapons faster while airborne.</td>
-      </tr>
-      <tr>
-        <td><strong>Epic</strong></td>
-        <td>Killswitch Sprite</td>
-        <td>Disables nearby enemy vehicle engines and disrupts enemy mini-maps.</td>
-      </tr>
-      <tr>
-        <td><strong>Legendary</strong></td>
-        <td>Crown Sprite</td>
-        <td>Multiplies XP gains and ping-reveals nearby chests upon open.</td>
-      </tr>
-      <tr>
-        <td><strong>Mythic</strong></td>
-        <td>Zero Point Sprite</td>
-        <td>Spawns a Shield Bubble Jr. whenever you use a self-healing item.</td>
-      </tr>
-      <tr>
-        <td><strong>Mythic</strong></td>
-        <td>John Wick Sprite</td>
-        <td>Knocking an enemy reveals all nearby squadmates on the radar.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <hr>
-
-  <h2>Weapons, Mobility & Battle Pass Highlights</h2>
-  <ul>
-    <li><strong>Mega Blaster Arm Cannon:</strong> Mega Man's signature arm cannon allowing charged energy blasts.</li>
-    <li><strong>Midas' Masterpiece & Kingdom Key:</strong> High-stakes Mythics featuring one-shot headshot capability and melee combo overrides.</li>
-    <li><strong>Battle Pass Roster:</strong> Features <strong>Bastian</strong>, <strong>Grace Crowne</strong>, <strong>K1TTYW1NS</strong>, <strong>Wrixel</strong>, <strong>Mali</strong>, <strong>Phantom</strong>, <strong>Geno</strong>, and <strong>Sonic the Hedgehog</strong>.</li>
-  </ul>
-  </header>
-</div>
+</body>
+</html>
