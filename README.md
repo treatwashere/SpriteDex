@@ -1,4 +1,3 @@
-A Fortnite SpriteDex.
+A Fortnite Sprite tracker for the Runners and Override Fortnite seasons.
 
-Here's the live site:
-https://staticvacant.github.io/fnsprites/
+[Live Site](https://spritedex-nine.vercel.app)
