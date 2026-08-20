@@ -23,7 +23,7 @@ const SORT_METHODS = ['theme', 'sprite', 'name', 'rarity'];
 const UI_THEME_LABELS = { Candy: 'Gummy' };
 const EXPORT_THEME_LABELS = { Basic: 'NORMAL', Candy: 'GUMMY' };
 const TRADE_THEME_LABELS = { Basic: 'Base', Candy: 'Gummy' };
-const TRACKER_URL = 'https://staticvacant.github.io/fnsprites/';
+const TRACKER_URL = 'https://spritedex-nine.vercel.app/';
 const CROWN_ICON = '<svg class="crown-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 19h20v2H2v-2zM2 5l5 3.5L12 2l5 6.5L22 5v12H2V5z"/></svg>';
 
 const EXPORT_LAYOUT = {
@@ -58,7 +58,7 @@ const state = {
         sortOrder: 'theme',
         showUnreleased: false,
         lowFidelity: false,
-        openExports: false,
+        openExports: true,
     },
 };
 
