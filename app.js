@@ -58,7 +58,7 @@ const state = {
         sortOrder: 'theme',
         showUnreleased: false,
         lowFidelity: false,
-        openExports: true,
+        openExports: false,
     },
 };
 
