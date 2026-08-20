@@ -37,6 +37,56 @@
   max-width: 100%;
   height: auto;
 }
+
+/* Dropdown styling */
+.filter-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.season-select {
+  padding: 8px 16px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1rem;
+  border-radius: 6px;
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #333;
+  cursor: pointer;
+}
+
+/* Section Header Separator */
+.section-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 800px;
+  margin: 40px 0;
+}
+
+.section-separator::before,
+.section-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 2px solid #333;
+}
+
+.section-separator span {
+  padding: 0 15px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.5rem;
+  color: #888;
+  letter-spacing: 2px;
+}
+
+/* Utility to hide elements */
+.hidden {
+  display: none !important;
+}
 </style>
 
 <div class="app">
@@ -49,9 +99,21 @@
             <a href="https://spritedex-nine.vercel.app" class="btn btn-accent">Return</a>
         </div>
     </header>
+
+    <!-- Season Filter Dropdown -->
+    <div class="filter-container">
+      <label for="season-dropdown" style="font-family: 'Oswald', sans-serif; color: #fff;">Select View:</label>
+      <select id="season-dropdown" class="season-select">
+        <option value="all">1: All Seasons</option>
+        <option value="runners">2: Runners</option>
+        <option value="override">3: Override</option>
+      </select>
+    </div>
     
     <div class="seasons">
-      <div class="runners">
+      
+      <!-- RUNNERS SECTION -->
+      <div id="section-runners" class="runners">
         <header>
           <h1>Runners Season</h1>
           <img src="siteimages/ch7s3_runners.jpeg" alt="Season 3 Runners Thumbnail">
@@ -151,7 +213,13 @@
         </header>
       </div>
 
-      <div class="override">
+      <!-- SEPARATOR HEADER -->
+      <div id="section-separator" class="section-separator">
+        <span>CHAPTER 7, SEASON 4</span>
+      </div>
+
+      <!-- OVERRIDE SECTION -->
+      <div id="section-override" class="override">
         <header>
           <h2>Override Season</h2>
           <img src="siteimages/EN_FNBR_42-00_C7S4_KeyArt_Cartridge_Generic_SocialShare_1920x1080.jpeg" alt="override thumbnail">
@@ -240,7 +308,35 @@
           </ul>
         </header>
       </div>
+
     </div>
 </div>
+
+<script>
+  const dropdown = document.getElementById('season-dropdown');
+  const runnersSection = document.getElementById('section-runners');
+  const overrideSection = document.getElementById('section-override');
+  const separator = document.getElementById('section-separator');
+
+  dropdown.addEventListener('change', (e) => {
+    const value = e.target.value;
+
+    if (value === 'runners') {
+      runnersSection.classList.remove('hidden');
+      overrideSection.classList.add('hidden');
+      separator.classList.add('hidden');
+    } else if (value === 'override') {
+      runnersSection.classList.add('hidden');
+      overrideSection.classList.remove('hidden');
+      separator.classList.add('hidden');
+    } else {
+      // Show All
+      runnersSection.classList.remove('hidden');
+      overrideSection.classList.remove('hidden');
+      separator.classList.remove('hidden');
+    }
+  });
+</script>
+
 </body>
 </html>
