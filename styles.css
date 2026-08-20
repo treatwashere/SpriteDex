@@ -1292,4 +1292,7 @@ body.low-fidelity .card.theme-Cheat::before {
         width: 100%;
         min-height: 40px;
     }
-}
+
+    .seasons {
+    align-items: center;
+    }
