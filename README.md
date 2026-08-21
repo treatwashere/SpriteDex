@@ -1,5 +1,7 @@
 A Fortnite Sprite tracker for the Runners and Override Fortnite seasons.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/470d25e2-74cf-4c45-9f01-f09a46aafc4c/deploy-status)](https://app.netlify.com/projects/spritedex-test/deploys)
+
 [Live Site](https://spritedex-nine.vercel.app)  
 [Testing Site](https://treatwashere.github.io/SpriteDex/)
 
