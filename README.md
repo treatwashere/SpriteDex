@@ -1,6 +1,7 @@
 A Fortnite Sprite tracker for the Runners and Override Fortnite seasons.
 
-[Live Site](https://spritedex-nine.vercel.app)
+[Live Site](https://spritedex-nine.vercel.app)  
+[Testing Site](https://treatwashere.github.io/SpriteDex/)
 
 ![runners](siteimages/ch7s3_runners.jpeg)
 
