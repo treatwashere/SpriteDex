@@ -1635,7 +1635,7 @@ function bindEvents() {
 function showFloatingCopyText(anchorElement) {
     const textEl = document.createElement('div');
     textEl.className = 'floating-copy-text';
-    textEl.textContent = 'Code copied to clipboard!';
+    textEl.textContent = 'Channel name copied to clipboard!';
 
     // Calculate absolute position on the viewport
     const rect = anchorElement.getBoundingClientRect();
