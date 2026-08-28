@@ -1,7 +1,6 @@
 A Fortnite Sprite tracker for the Runners and Override Fortnite seasons.
 
-![Vercel Deployment Status](https://img.shields.io/website?url=https%3A%2F%2Fspritedex-nine.vercel.app&up_message=deployed&down_message=failed)
-
+![Vercel Deploy](https://badge-deploy-status.vercel.app/vercel/spritedex-nine?style=plastic&name=Vercel)
 
 [Live Site](https://spritedex-nine.vercel.app)
 
