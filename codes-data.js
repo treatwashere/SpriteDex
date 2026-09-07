@@ -37,6 +37,8 @@ const baseCodes = [
     { code: "PerfectOrder", reward: "4 Spicy Tacos", internalreward: null, category: "cat3", active: true },
     { code: "O2Override", reward: "1 Llama Supply Drop & 1 Portable Extractor", internalreward: null, category: "cat3", active: true },
     { code: "NoProLlama", reward: "1 Llama Supply Drop", internalreward: null, category: "cat3", active: true },
+    { code: "YourThoughtsAreMine", reward: "(Requires Quest In-Game) 5,000 Sprite Dust And Void Master Geno Outfit", internalreward: null, category: "cat3", active: true },
+    
     // --- cat4
     { code: "DontBlockMe", reward: "Turns you into a Tetrimino.", internalreward: null, category: "cat4", active: true },
     { code: "LetsBlockAndRoll", reward: "Turns you into a Tetrimino.", internalreward: null, category: "cat4", active: true }
